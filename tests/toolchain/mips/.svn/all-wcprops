@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/native_client/!svn/ver/12235/trunk/src/native_client/tests/toolchain/mips
+END
+mips_atomic64.c
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/native_client/!svn/ver/12235/trunk/src/native_client/tests/toolchain/mips/mips_atomic64.c
+END
+nacl.scons
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/native_client/!svn/ver/12235/trunk/src/native_client/tests/toolchain/mips/nacl.scons
+END

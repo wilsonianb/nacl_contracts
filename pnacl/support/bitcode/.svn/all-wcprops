@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/native_client/!svn/ver/12378/trunk/src/native_client/pnacl/support/bitcode
+END
+crtbegin.c
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/native_client/!svn/ver/12353/trunk/src/native_client/pnacl/support/bitcode/crtbegin.c
+END
+crt1.x
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/native_client/!svn/ver/11275/trunk/src/native_client/pnacl/support/bitcode/crt1.x
+END
+sjlj_eh_redirect.c
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/native_client/!svn/ver/12364/trunk/src/native_client/pnacl/support/bitcode/sjlj_eh_redirect.c
+END
+crt1_for_eh.x
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/native_client/!svn/ver/11275/trunk/src/native_client/pnacl/support/bitcode/crt1_for_eh.x
+END
+crti.c
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/native_client/!svn/ver/7498/trunk/src/native_client/pnacl/support/bitcode/crti.c
+END
+unwind_stubs.c
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/native_client/!svn/ver/12364/trunk/src/native_client/pnacl/support/bitcode/unwind_stubs.c
+END
+pnaclmm.c
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/native_client/!svn/ver/12378/trunk/src/native_client/pnacl/support/bitcode/pnaclmm.c
+END

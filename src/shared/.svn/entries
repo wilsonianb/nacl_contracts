@@ -1,0 +1,83 @@
+10
+
+dir
+13016
+http://src.chromium.org/native_client/trunk/src/native_client/src/shared
+http://src.chromium.org/native_client
+
+
+
+2014-03-12T21:23:54.255233Z
+12878
+sbc@chromium.org
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+fcba33aa-ac0c-11dd-b9e7-8d5594d729c2
+
+gio
+dir
+
+utils
+dir
+
+ldr
+dir
+
+platform
+dir
+
+srpc
+dir
+
+imc
+dir
+
+DEPS
+file
+
+
+
+
+2014-04-09T16:24:45.181917Z
+9f9b25f2c030d2f38433b84d7bdf13bb
+2013-06-03T22:30:24.976581Z
+11458
+mcgrathr@chromium.org
+has-props
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+114
+
+serialization
+dir
+

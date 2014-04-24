@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/native_client/!svn/ver/12989/trunk/src/native_client/build/config
+END
+OWNERS
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/native_client/!svn/ver/12946/trunk/src/native_client/build/config/OWNERS
+END
+BUILD.gn
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/native_client/!svn/ver/12989/trunk/src/native_client/build/config/BUILD.gn
+END
+BUILDCONFIG.gn
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/native_client/!svn/ver/12989/trunk/src/native_client/build/config/BUILDCONFIG.gn
+END

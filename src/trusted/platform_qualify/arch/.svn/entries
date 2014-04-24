@@ -1,0 +1,43 @@
+10
+
+dir
+13016
+http://src.chromium.org/native_client/trunk/src/native_client/src/trusted/platform_qualify/arch
+http://src.chromium.org/native_client
+
+
+
+2013-12-11T21:48:05.422058Z
+12525
+jfb@chromium.org
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+fcba33aa-ac0c-11dd-b9e7-8d5594d729c2
+
+x86_64
+dir
+
+arm
+dir
+
+x86
+dir
+
+mips
+dir
+
+x86_32
+dir
+

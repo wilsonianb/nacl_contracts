@@ -1,0 +1,77 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/native_client/!svn/ver/12872/trunk/src/native_client/tests/libc
+END
+malloc_realloc_calloc_free.c
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/native_client/!svn/ver/12231/trunk/src/native_client/tests/libc/malloc_realloc_calloc_free.c
+END
+wcstoll.c
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/native_client/!svn/ver/12223/trunk/src/native_client/tests/libc/wcstoll.c
+END
+strtoull.c
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/native_client/!svn/ver/12223/trunk/src/native_client/tests/libc/strtoull.c
+END
+memcpy_move_set.c
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/native_client/!svn/ver/12223/trunk/src/native_client/tests/libc/memcpy_move_set.c
+END
+memcpy_move_set.stdout
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/native_client/!svn/ver/12223/trunk/src/native_client/tests/libc/memcpy_move_set.stdout
+END
+posix_memalign.c
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/native_client/!svn/ver/12445/trunk/src/native_client/tests/libc/posix_memalign.c
+END
+iconv.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/native_client/!svn/ver/12403/trunk/src/native_client/tests/libc/iconv.c
+END
+printf_to_puts.c
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/native_client/!svn/ver/12223/trunk/src/native_client/tests/libc/printf_to_puts.c
+END
+nacl.scons
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/native_client/!svn/ver/12872/trunk/src/native_client/tests/libc/nacl.scons
+END
+snprintf.c
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/native_client/!svn/ver/12872/trunk/src/native_client/tests/libc/snprintf.c
+END
+snprintf.stdout
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/native_client/!svn/ver/12872/trunk/src/native_client/tests/libc/snprintf.stdout
+END
+strtoll.c
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/native_client/!svn/ver/12223/trunk/src/native_client/tests/libc/strtoll.c
+END

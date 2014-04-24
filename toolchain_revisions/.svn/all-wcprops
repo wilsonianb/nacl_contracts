@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/native_client/!svn/ver/12994/trunk/src/native_client/toolchain_revisions
+END
+nacl_arm_newlib.json
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/native_client/!svn/ver/12994/trunk/src/native_client/toolchain_revisions/nacl_arm_newlib.json
+END

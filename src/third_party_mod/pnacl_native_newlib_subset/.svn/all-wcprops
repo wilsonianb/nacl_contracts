@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/native_client/!svn/ver/11605/trunk/src/native_client/src/third_party_mod/pnacl_native_newlib_subset
+END
+README.nacl
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/native_client/!svn/ver/11605/trunk/src/native_client/src/third_party_mod/pnacl_native_newlib_subset/README.nacl
+END
+COPYING.NEWLIB
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/native_client/!svn/ver/11604/trunk/src/native_client/src/third_party_mod/pnacl_native_newlib_subset/COPYING.NEWLIB
+END
+string.c
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/native_client/!svn/ver/11604/trunk/src/native_client/src/third_party_mod/pnacl_native_newlib_subset/string.c
+END

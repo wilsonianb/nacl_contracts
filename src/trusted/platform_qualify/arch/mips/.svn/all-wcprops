@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/native_client/!svn/ver/12124/trunk/src/native_client/src/trusted/platform_qualify/arch/mips
+END
+nacl_qualify_fpu.c
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/native_client/!svn/ver/12124/trunk/src/native_client/src/trusted/platform_qualify/arch/mips/nacl_qualify_fpu.c
+END
+nacl_mips_qualify.h
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/native_client/!svn/ver/12124/trunk/src/native_client/src/trusted/platform_qualify/arch/mips/nacl_mips_qualify.h
+END

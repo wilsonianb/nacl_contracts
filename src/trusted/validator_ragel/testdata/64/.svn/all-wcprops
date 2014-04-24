@@ -1,0 +1,815 @@
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/native_client/!svn/ver/12462/trunk/src/native_client/src/trusted/validator_ragel/testdata/64
+END
+cmpxchg.test
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/cmpxchg.test
+END
+invalid_base_store.test
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/invalid_base_store.test
+END
+call_aligned.test
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/call_aligned.test
+END
+bad66.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/bad66.test
+END
+update-rsp-b32.test
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/update-rsp-b32.test
+END
+mov_rbp_2_rsp.test
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mov_rbp_2_rsp.test
+END
+mv_ebp_add_rbp_r15.test
+K 25
+svn:wc:ra_dav:version-url
+V 117
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mv_ebp_add_rbp_r15.test
+END
+maskmov_test.test
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/maskmov_test.test
+END
+string_rep_data16.test
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/string_rep_data16.test
+END
+nops.test
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/native_client/!svn/ver/11882/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/nops.test
+END
+invalid_base.test
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/invalid_base.test
+END
+call0.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/call0.test
+END
+sub-rsp.test
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/sub-rsp.test
+END
+mov_esp_add_rsp_r15.test
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mov_esp_add_rsp_r15.test
+END
+change-subregs.test
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/change-subregs.test
+END
+prefix-3.test
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/prefix-3.test
+END
+jump_underflow.test
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/jump_underflow.test
+END
+mov-lea-rsp.test
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mov-lea-rsp.test
+END
+bsf-mask.test
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/bsf-mask.test
+END
+rex_invalid.test
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/native_client/!svn/ver/11843/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/rex_invalid.test
+END
+jmp0.test
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/jmp0.test
+END
+stosdno67.test
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/stosdno67.test
+END
+mov-lea-rbp-bad-5.test
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mov-lea-rbp-bad-5.test
+END
+prefix-single.test
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/prefix-single.test
+END
+call_not_aligned.test
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/call_not_aligned.test
+END
+bsr-mask.test
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/bsr-mask.test
+END
+sse4data16.test
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/sse4data16.test
+END
+stosd-bad.test
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/stosd-bad.test
+END
+rbp67.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/rbp67.test
+END
+lea.test
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/native_client/!svn/ver/11667/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/lea.test
+END
+rex_not_last.test
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/rex_not_last.test
+END
+mov-esi-nop-use.test
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mov-esi-nop-use.test
+END
+lea-rsp.test
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/lea-rsp.test
+END
+add_rsp_r15.test
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/add_rsp_r15.test
+END
+mov-lea-rbp-bad-2.test
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mov-lea-rbp-bad-2.test
+END
+add_mult_prefix.test
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/native_client/!svn/ver/11843/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/add_mult_prefix.test
+END
+addrex.test
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/addrex.test
+END
+rip67.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/rip67.test
+END
+tests_from_pydfa.test
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/tests_from_pydfa.test
+END
+rep_tests.test
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/rep_tests.test
+END
+0f18.test
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/0f18.test
+END
+sub-add-rsp.test
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/sub-add-rsp.test
+END
+mov-lea-rbp.test
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mov-lea-rbp.test
+END
+dup-prefix.test
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/dup-prefix.test
+END
+call-ex.test
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/native_client/!svn/ver/11843/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/call-ex.test
+END
+mv_ebp_add_crossing.test
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mv_ebp_add_crossing.test
+END
+call_long.test
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/call_long.test
+END
+3DNow.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11765/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/3DNow.test
+END
+indirect_jmp_masked.test
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/indirect_jmp_masked.test
+END
+lea-rbp-rsp-order.test
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/lea-rbp-rsp-order.test
+END
+jump_overflow.test
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/jump_overflow.test
+END
+shl_alias.test
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/shl_alias.test
+END
+extensions.test
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/extensions.test
+END
+cmov.test
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/cmov.test
+END
+legacy.test
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/native_client/!svn/ver/12423/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/legacy.test
+END
+mov_system.test
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mov_system.test
+END
+read_const_ptr.test
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/read_const_ptr.test
+END
+jump_outside.test
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/jump_outside.test
+END
+AhNotSubRsp.test
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/AhNotSubRsp.test
+END
+loop.test
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/loop.test
+END
+wrmsr.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/wrmsr.test
+END
+jmp-16.test
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/jmp-16.test
+END
+invalid_width_index.test
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/invalid_width_index.test
+END
+movsxd.test
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/movsxd.test
+END
+incno67.test
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/native_client/!svn/ver/11657/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/incno67.test
+END
+movs_test.test
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/movs_test.test
+END
+mv_ebp_alone.test
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mv_ebp_alone.test
+END
+x87.test
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/x87.test
+END
+stubseq.test
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/stubseq.test
+END
+xchg_xadd_mem.test
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/xchg_xadd_mem.test
+END
+lea-add-rsp.test
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/native_client/!svn/ver/11667/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/lea-add-rsp.test
+END
+strings.test
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/strings.test
+END
+sse.test
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/sse.test
+END
+valid_base_only.test
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/valid_base_only.test
+END
+prefix-2.test
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/native_client/!svn/ver/12462/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/prefix-2.test
+END
+jump_reg_mismatch.test
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/jump_reg_mismatch.test
+END
+or_sp_sandboxing.test
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/or_sp_sandboxing.test
+END
+cpuid.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/cpuid.test
+END
+xchg_with_special_regs.test
+K 25
+svn:wc:ra_dav:version-url
+V 121
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/xchg_with_special_regs.test
+END
+mov-lea-rbp-bad-4.test
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mov-lea-rbp-bad-4.test
+END
+nacl_illegal.test
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/nacl_illegal.test
+END
+indirect_jmp_not_masked.test
+K 25
+svn:wc:ra_dav:version-url
+V 122
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/indirect_jmp_not_masked.test
+END
+crc32.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/crc32.test
+END
+eax_zero_extend.test
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/eax_zero_extend.test
+END
+call_not_aligned_16.test
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/call_not_aligned_16.test
+END
+movlps-ex.test
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/native_client/!svn/ver/11779/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/movlps-ex.test
+END
+valid_and_store.test
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/native_client/!svn/ver/11843/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/valid_and_store.test
+END
+restricted_registers_preservation_bug.test
+K 25
+svn:wc:ra_dav:version-url
+V 136
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/restricted_registers_preservation_bug.test
+END
+mmx.test
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/native_client/!svn/ver/11765/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mmx.test
+END
+mov-lea-rbp-bad-1.test
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mov-lea-rbp-bad-1.test
+END
+rip-relative.test
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/rip-relative.test
+END
+jump_not_atomic_1.test
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/jump_not_atomic_1.test
+END
+xchg_zero_ext.test
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/xchg_zero_ext.test
+END
+stosd67.test
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/stosd67.test
+END
+bswap.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/bswap.test
+END
+segment_store.test
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/segment_store.test
+END
+push.test
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/push.test
+END
+ambig-segment.test
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/ambig-segment.test
+END
+size_error.test
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/size_error.test
+END
+fs_use.test
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/fs_use.test
+END
+stack_regs.test
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/stack_regs.test
+END
+inc67.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/inc67.test
+END
+rdmsr.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/rdmsr.test
+END
+test_alias.test
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/test_alias.test
+END
+lzcnt.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/lzcnt.test
+END
+call1.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/call1.test
+END
+tzcnt.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11843/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/tzcnt.test
+END
+direct-jump-32.test
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/direct-jump-32.test
+END
+jump_atomic.test
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/native_client/!svn/ver/11843/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/jump_atomic.test
+END
+direct-jump-16.test
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/direct-jump-16.test
+END
+movsbw.test
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/native_client/!svn/ver/11668/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/movsbw.test
+END
+add_cs_gs_prefix.test
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/add_cs_gs_prefix.test
+END
+update-rsp.test
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/update-rsp.test
+END
+inc_dec.test
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/native_client/!svn/ver/11657/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/inc_dec.test
+END
+direct-cond-jump-32.test
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/direct-cond-jump-32.test
+END
+restricted_registers_rpb_rsp.test
+K 25
+svn:wc:ra_dav:version-url
+V 127
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/restricted_registers_rpb_rsp.test
+END
+direct-cond-jump-16.test
+K 25
+svn:wc:ra_dav:version-url
+V 118
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/direct-cond-jump-16.test
+END
+addrex2.test
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/addrex2.test
+END
+ud2.test
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/native_client/!svn/ver/11843/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/ud2.test
+END
+fpu.test
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/native_client/!svn/ver/11757/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/fpu.test
+END
+call_short.test
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/call_short.test
+END
+stosd.test
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/stosd.test
+END
+valid_lea_store.test
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/valid_lea_store.test
+END
+test_insts.test
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/test_insts.test
+END
+data66prefix.test
+K 25
+svn:wc:ra_dav:version-url
+V 111
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/data66prefix.test
+END
+direct-call-32.test
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/direct-call-32.test
+END
+mov-lea-rbp-bad-3.test
+K 25
+svn:wc:ra_dav:version-url
+V 116
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/mov-lea-rbp-bad-3.test
+END
+bt.test
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/bt.test
+END
+direct-call-16.test
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/direct-call-16.test
+END
+jcxz.test
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/jcxz.test
+END
+return.test
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/native_client/!svn/ver/11843/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/return.test
+END
+segment_aligned.test
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/segment_aligned.test
+END
+and_rsp.test
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/and_rsp.test
+END
+jump_not_atomic.test
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/native_client/!svn/ver/11863/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/jump_not_atomic.test
+END
+hlt.test
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/native_client/!svn/ver/11830/trunk/src/native_client/src/trusted/validator_ragel/testdata/64/hlt.test
+END

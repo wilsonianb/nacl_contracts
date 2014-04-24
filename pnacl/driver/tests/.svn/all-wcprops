@@ -1,0 +1,101 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/native_client/!svn/ver/12951/trunk/src/native_client/pnacl/driver/tests
+END
+driver_tools_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/native_client/!svn/ver/12778/trunk/src/native_client/pnacl/driver/tests/driver_tools_test.py
+END
+driver_test_utils.py
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/native_client/!svn/ver/12951/trunk/src/native_client/pnacl/driver/tests/driver_test_utils.py
+END
+driver_tests.py
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/native_client/!svn/ver/12812/trunk/src/native_client/pnacl/driver/tests/driver_tests.py
+END
+filetype_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/native_client/!svn/ver/12094/trunk/src/native_client/pnacl/driver/tests/filetype_test.py
+END
+fix_private_libs_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/native_client/!svn/ver/12951/trunk/src/native_client/pnacl/driver/tests/fix_private_libs_test.py
+END
+TEST_REV_SVN
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/native_client/!svn/ver/12620/trunk/src/native_client/pnacl/driver/tests/TEST_REV_SVN
+END
+help_message_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/native_client/!svn/ver/10553/trunk/src/native_client/pnacl/driver/tests/help_message_test.py
+END
+expand_response_file_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/native_client/!svn/ver/12094/trunk/src/native_client/pnacl/driver/tests/expand_response_file_test.py
+END
+force_file_type_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/native_client/!svn/ver/12778/trunk/src/native_client/pnacl/driver/tests/force_file_type_test.py
+END
+native_objects_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/native_client/!svn/ver/12810/trunk/src/native_client/pnacl/driver/tests/native_objects_test.py
+END
+diagnostic_flags_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/native_client/!svn/ver/12620/trunk/src/native_client/pnacl/driver/tests/diagnostic_flags_test.py
+END
+strip_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/native_client/!svn/ver/12094/trunk/src/native_client/pnacl/driver/tests/strip_test.py
+END
+driver_env_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/native_client/!svn/ver/12108/trunk/src/native_client/pnacl/driver/tests/driver_env_test.py
+END
+default_output_filename_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/native_client/!svn/ver/12013/trunk/src/native_client/pnacl/driver/tests/default_output_filename_test.py
+END
+translate_options_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/native_client/!svn/ver/12884/trunk/src/native_client/pnacl/driver/tests/translate_options_test.py
+END
+pnacl_compress_test.py
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/native_client/!svn/ver/12837/trunk/src/native_client/pnacl/driver/tests/pnacl_compress_test.py
+END

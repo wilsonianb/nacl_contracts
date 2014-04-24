@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/native_client/!svn/ver/12642/trunk/src/native_client/tests/process_create
+END
+nacl.scons
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/native_client/!svn/ver/12642/trunk/src/native_client/tests/process_create/nacl.scons
+END
+hello_world_subprocess.c
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/native_client/!svn/ver/12642/trunk/src/native_client/tests/process_create/hello_world_subprocess.c
+END
+srpc_process_create_test.stdin
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/native_client/!svn/ver/12642/trunk/src/native_client/tests/process_create/srpc_process_create_test.stdin
+END
+srpc_process_create_test.c
+K 25
+svn:wc:ra_dav:version-url
+V 101
+/native_client/!svn/ver/12642/trunk/src/native_client/tests/process_create/srpc_process_create_test.c
+END
+srpc_process_create_test.stdout
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/native_client/!svn/ver/12642/trunk/src/native_client/tests/process_create/srpc_process_create_test.stdout
+END

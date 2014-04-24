@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/native_client/!svn/ver/13014/trunk/src/native_client/tests
+END
+DEPS
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/native_client/!svn/ver/11458/trunk/src/native_client/tests/DEPS
+END
+testutils.py
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/native_client/!svn/ver/3112/trunk/src/native_client/tests/testutils.py
+END

@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/native_client/!svn/ver/12380/trunk/src/native_client/src/untrusted/minidump_generator
+END
+DEPS
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/native_client/!svn/ver/11313/trunk/src/native_client/src/untrusted/minidump_generator/DEPS
+END
+minidump_generator.cc
+K 25
+svn:wc:ra_dav:version-url
+V 108
+/native_client/!svn/ver/12380/trunk/src/native_client/src/untrusted/minidump_generator/minidump_generator.cc
+END
+build_id.cc
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/native_client/!svn/ver/12380/trunk/src/native_client/src/untrusted/minidump_generator/build_id.cc
+END
+build_id.h
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/native_client/!svn/ver/12055/trunk/src/native_client/src/untrusted/minidump_generator/build_id.h
+END
+nacl.scons
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/native_client/!svn/ver/11400/trunk/src/native_client/src/untrusted/minidump_generator/nacl.scons
+END
+minidump_generator.gyp
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/native_client/!svn/ver/11400/trunk/src/native_client/src/untrusted/minidump_generator/minidump_generator.gyp
+END

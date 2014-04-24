@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/native_client/!svn/ver/12644/trunk/src/native_client/src/trusted/desc_cacheability
+END
+desc_cacheability.gyp
+K 25
+svn:wc:ra_dav:version-url
+V 105
+/native_client/!svn/ver/12644/trunk/src/native_client/src/trusted/desc_cacheability/desc_cacheability.gyp
+END
+desc_cacheability.c
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/native_client/!svn/ver/12644/trunk/src/native_client/src/trusted/desc_cacheability/desc_cacheability.c
+END
+build.scons
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/native_client/!svn/ver/12644/trunk/src/native_client/src/trusted/desc_cacheability/build.scons
+END
+desc_cacheability.h
+K 25
+svn:wc:ra_dav:version-url
+V 103
+/native_client/!svn/ver/12644/trunk/src/native_client/src/trusted/desc_cacheability/desc_cacheability.h
+END

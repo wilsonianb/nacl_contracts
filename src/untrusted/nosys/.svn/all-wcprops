@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/native_client/!svn/ver/12084/trunk/src/native_client/src/untrusted/nosys
+END
+nacl.scons
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/native_client/!svn/ver/12084/trunk/src/native_client/src/untrusted/nosys/nacl.scons
+END
+nosys.gyp
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/native_client/!svn/ver/12084/trunk/src/native_client/src/untrusted/nosys/nosys.gyp
+END

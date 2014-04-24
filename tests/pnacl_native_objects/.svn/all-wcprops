@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/native_client/!svn/ver/12251/trunk/src/native_client/tests/pnacl_native_objects
+END
+sym_b2.c
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/native_client/!svn/ver/12074/trunk/src/native_client/tests/pnacl_native_objects/sym_b2.c
+END
+tls_use.c
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/native_client/!svn/ver/12074/trunk/src/native_client/tests/pnacl_native_objects/tls_use.c
+END
+nacl.scons
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/native_client/!svn/ver/12251/trunk/src/native_client/tests/pnacl_native_objects/nacl.scons
+END
+tls_def.c
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/native_client/!svn/ver/12074/trunk/src/native_client/tests/pnacl_native_objects/tls_def.c
+END
+main.c
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/native_client/!svn/ver/12074/trunk/src/native_client/tests/pnacl_native_objects/main.c
+END
+sym_a.c
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/native_client/!svn/ver/12074/trunk/src/native_client/tests/pnacl_native_objects/sym_a.c
+END
+sym_b.c
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/native_client/!svn/ver/12074/trunk/src/native_client/tests/pnacl_native_objects/sym_b.c
+END
