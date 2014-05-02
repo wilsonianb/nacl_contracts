@@ -8,7 +8,7 @@
 
 /*
  * Reverse channel control RPCs.  Used by the service runtime reverse
- * setup proceedure, testing, and by the manifest proxy to add a new
+ * setup procedure, testing, and by the manifest proxy to add a new
  * client channel.
  */
 
@@ -20,5 +20,7 @@
 #define NACL_REVERSE_REQUEST_QUOTA_FOR_WRITE  "request_quota_for_write:Cll:l"
 #define NACL_REVERSE_CONTROL_CREATE_PROCESS_INTERLOCKED \
   "create_process_interlocked::hhi"
+//#define NACL_REVERSE_READ_RIPPLE_LEDGER	    "read_ripple_ledger:s:s"
+#define NACL_REVERSE_READ_RIPPLE_LEDGER	      "read_ripple_ledger:s:C"
 
 #endif

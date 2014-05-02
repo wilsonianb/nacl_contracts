@@ -210,6 +210,33 @@ int64_t RequestQuotaForWrite(NaClReverseInterface* self,
       nacl::string(file_id), offset, length);
 }
 
+size_t ReadRippleLedger(NaClReverseInterface* self,
+                              char const* ledger_hash,
+                              char      * buffer,
+                              size_t      buffer_bytes) {
+  ReverseInterfaceWrapper* wrapper =
+      reinterpret_cast<ReverseInterfaceWrapper*>(self);
+  nacl::string ledger_data;
+
+  if (!wrapper->iface->ReadRippleLedger(nacl::string(ledger_hash), &ledger_data)) {
+    NaClLog(LOG_WARNING, "ReadRippleLedger failed\n");
+    return 0;
+  }
+
+  size_t size = 0;
+  if (ledger_data.size() < buffer_bytes) {
+    size = ledger_data.size();
+  } else {
+    size = buffer_bytes;
+    NaClLog(3,
+          "ReadRippleLedger: truncating ledger data %s\n", ledger_data.c_str());
+  }
+  strncpy(buffer, ledger_data.c_str(), size);
+  NaClLog(3, "ReadRippleLedger: %.*s\n", (int) size, buffer);
+
+  return size;
+}
+
 void ReverseInterfaceWrapperDtor(NaClRefCount* vself) {
   ReverseInterfaceWrapper* self =
       reinterpret_cast<ReverseInterfaceWrapper*>(vself);
@@ -235,6 +262,7 @@ static NaClReverseInterfaceVtbl const kReverseInterfaceWrapperVtbl = {
   CreateProcessFunctorResult,
   FinalizeProcess,
   RequestQuotaForWrite,
+  ReadRippleLedger,
 };
 
 int ReverseInterfaceWrapperCtor(ReverseInterfaceWrapper* self,

@@ -5,31 +5,30 @@
 
 Import('env')
 
-srpc_hw_libs = ['srpc', 'platform', 'gio', 'imc', 'imc_syscalls']
+read_ledger_libs = ['srpc', 'platform', 'gio', 'imc', 'imc_syscalls']
 
-srpc_hw_obj = env.ComponentObject('srpc_hw.o', 'srpc_hw.c')
-srpc_hw_nexe_name = 'srpc_hw_%s' % env.get('TARGET_FULLARCH')
-srpc_hw_nexe = env.ComponentProgram(srpc_hw_nexe_name,
-                                    srpc_hw_obj,
-                                    EXTRA_LIBS=srpc_hw_libs + [
+read_ledger_obj = env.ComponentObject('read_ledger.o', 'read_ledger.c')
+read_ledger_nexe_name = 'read_ledger_%s' % env.get('TARGET_FULLARCH')
+read_ledger_nexe = env.ComponentProgram(read_ledger_nexe_name,
+                                    read_ledger_obj,
+                                    EXTRA_LIBS=read_ledger_libs + [
                                         '${PTHREAD_LIBS}'])
 
-env.Publish(srpc_hw_nexe_name, 'run',
-            ['srpc_hw.html',
-             'srpc_hw_data.html'])
+env.Publish(read_ledger_nexe_name, 'run',
+            ['read_ledger.html',
+             'read_ledger_data.html'])
 
-srpc_hw_nonbrowser = env.ComponentProgram('srpc_hw_nonbrowser',
-                                           srpc_hw_obj,
-                                           EXTRA_LIBS=srpc_hw_libs + [
+read_ledger_nonbrowser = env.ComponentProgram('read_ledger_nonbrowser',
+                                           read_ledger_obj,
+                                           EXTRA_LIBS=read_ledger_libs + [
                                                '${PTHREAD_LIBS}',
                                                '${NONIRT_LIBS}'])
 
 node = env.SelUniversalTest(
-    'srpc_hw_test.out',
-    srpc_hw_nonbrowser,
-    sel_universal_flags=['--command_file', env.File('srpc_hw_test.stdin')],
-    stdout_golden=env.File('srpc_hw_test.stdout'),
+    'read_ledger_test.out',
+    read_ledger_nonbrowser,
+    stdout_golden=env.File('read_ledger_test.stdout'),
     )
 env.AddNodeToTestSuite(node,
                        ['small_tests'],
-                       'run_srpc_hw_test')
+                       'run_read_ledger_test')

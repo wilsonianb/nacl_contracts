@@ -64,3 +64,5 @@ toolchain_build/src/
 pnacl/build/
 pnacl/git/
 pnacl/src/
+
+tags

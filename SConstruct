@@ -3174,6 +3174,7 @@ irt_variant_tests = [
     'tests/pnacl_abi/nacl.scons',
     'tests/pnacl_native_objects/nacl.scons',
     'tests/process_create/nacl.scons',
+    'tests/read_ledger_srpc/nacl.scons',
     'tests/redir/nacl.scons',
     'tests/rodata_not_writable/nacl.scons',
     'tests/run_py/nacl.scons',

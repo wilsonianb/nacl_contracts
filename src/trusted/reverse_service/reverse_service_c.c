@@ -390,6 +390,34 @@ static void NaClReverseServiceRequestQuotaForWriteRpc(
   (*done_cls->Run)(done_cls);
 }
 
+static void NaClReverseServiceReadRippleLedgerRpc(
+    struct NaClSrpcRpc      *rpc,
+    struct NaClSrpcArg      **in_args,
+    struct NaClSrpcArg      **out_args,
+    struct NaClSrpcClosure  *done_cls) {
+  struct NaClReverseService *nrsp =
+    (struct NaClReverseService *) rpc->channel->server_instance_data;
+  char                      *ledger_hash = in_args[0]->arrays.str;
+  char                      *buffer = out_args[0]->arrays.carr;
+  nacl_abi_size_t           buffer_bytes = out_args[0]->u.count;
+  size_t                    size;
+
+  NaClLog(4, "Entered ReadRippleLedgerRpc: 0x%08"NACL_PRIxPTR", %s\n",
+          (uintptr_t) nrsp, ledger_hash);
+  if ((size = (*NACL_VTBL(NaClReverseInterface, nrsp->iface)->
+               ReadRippleLedger)(nrsp->iface, ledger_hash, buffer, buffer_bytes))
+      > NACL_ABI_SIZE_T_MAX) {
+    NaClLog(LOG_FATAL,
+            ("ReadRippleLedgerRpc: buffer size required is too large"
+             ", %08"NACL_PRIdS"\n"),
+            size);
+  }
+  out_args[0]->u.count = (nacl_abi_size_t) size;
+  NaClLog(4, "Leaving ReadRippleLedgerRpc\n");
+  rpc->result = NACL_SRPC_RESULT_OK;
+  (*done_cls->Run)(done_cls);
+}
+
 struct NaClReverseCountingThreadInterface {
   struct NaClThreadInterface  base NACL_IS_REFCOUNT_SUBCLASS;
   struct NaClReverseService   *reverse_service;
@@ -515,6 +543,7 @@ struct NaClSrpcHandlerDesc const kNaClReverseServiceHandlers[] = {
   { NACL_MANIFEST_LIST, NaClReverseServiceManifestListRpc, },
   { NACL_MANIFEST_LOOKUP, NaClReverseServiceManifestLookupRpc, },
   { NACL_REVERSE_REQUEST_QUOTA_FOR_WRITE, NaClReverseServiceRequestQuotaForWriteRpc, },
+  { NACL_REVERSE_READ_RIPPLE_LEDGER, NaClReverseServiceReadRippleLedgerRpc, },
   { (char const *) NULL, (NaClSrpcMethod) NULL, },
 };
 
@@ -731,6 +760,18 @@ int64_t NaClReverseInterfaceRequestQuotaForWrite(
   return 0;
 }
 
+size_t NaClReverseInterfaceReadRippleLedger(
+    struct NaClReverseInterface   *self,
+    char const                    *ledger_hash,
+    char                          *buffer,
+    size_t                        buffer_bytes) {
+  NaClLog(3,
+          ("NaClReverseInterfaceReadRippleLedger(0x%08"NACL_PRIxPTR
+           ", %s, 0x%08"NACL_PRIxPTR", %08"NACL_PRIdS")\n"),
+          (uintptr_t) self, ledger_hash, (uintptr_t) buffer, buffer_bytes);
+  return 0;
+}
+
 void NaClReverseInterfaceCreateProcessFunctorResult(
     struct NaClReverseInterface *self,
     void (*result_functor)(void *functor_state,
@@ -767,4 +808,5 @@ struct NaClReverseInterfaceVtbl const kNaClReverseInterfaceVtbl = {
   NaClReverseInterfaceCreateProcessFunctorResult,
   NaClReverseInterfaceFinalizeProcess,
   NaClReverseInterfaceRequestQuotaForWrite,
+  NaClReverseInterfaceReadRippleLedger,
 };

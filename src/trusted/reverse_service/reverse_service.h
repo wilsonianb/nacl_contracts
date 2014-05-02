@@ -130,7 +130,11 @@ class ReverseInterface : public RefCountBase {
     UNREFERENCED_PARAMETER(offset);
     return bytes_to_write;
   }
-
+  
+  // Read ripple ledger.
+  virtual bool ReadRippleLedger(nacl::string ledger_hash,
+                                nacl::string* ledger_data) = 0;
+  
   // covariant impl of Ref()
   ReverseInterface* Ref() {  // down_cast
     return reinterpret_cast<ReverseInterface*>(RefCountBase::Ref());
