@@ -26,6 +26,7 @@
 #include "native_client/src/trusted/desc/nacl_desc_io.h"
 
 #include "native_client/src/trusted/reverse_service/manifest_rpc.h"
+#include "native_client/src/trusted/reverse_service/ripple_ledger_rpc.h"
 #include "native_client/src/trusted/reverse_service/reverse_control_rpc.h"
 
 #include "native_client/src/trusted/service_runtime/include/sys/errno.h"
@@ -543,7 +544,7 @@ struct NaClSrpcHandlerDesc const kNaClReverseServiceHandlers[] = {
   { NACL_MANIFEST_LIST, NaClReverseServiceManifestListRpc, },
   { NACL_MANIFEST_LOOKUP, NaClReverseServiceManifestLookupRpc, },
   { NACL_REVERSE_REQUEST_QUOTA_FOR_WRITE, NaClReverseServiceRequestQuotaForWriteRpc, },
-  { NACL_REVERSE_READ_RIPPLE_LEDGER, NaClReverseServiceReadRippleLedgerRpc, },
+  { NACL_RIPPLE_LEDGER_READ, NaClReverseServiceReadRippleLedgerRpc, },
   { (char const *) NULL, (NaClSrpcMethod) NULL, },
 };
 

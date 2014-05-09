@@ -49,6 +49,7 @@ LIBRARY_DEPENDENCIES_DEFAULT = {
         'nacl_error_code',
         'env_cleanser',
         'manifest_proxy',
+        'ripple_ledger_service',
         'simple_service',
         'thread_interface',
         'gio_wrapped_desc',

@@ -1,0 +1,9 @@
+# -*- python -*-
+
+Import('env')
+
+ripple_ledger_service_inputs = [
+    'ripple_ledger_service.c',
+]
+
+env.DualLibrary('ripple_ledger_service', ripple_ledger_service_inputs)

@@ -19,6 +19,7 @@
 #include "native_client/src/trusted/desc/nacl_desc_invalid.h"
 #include "native_client/src/trusted/fault_injection/fault_injection.h"
 #include "native_client/src/trusted/manifest_name_service_proxy/manifest_proxy.h"
+#include "native_client/src/trusted/ripple_ledger_service/ripple_ledger_service.h"
 #include "native_client/src/trusted/simple_service/nacl_simple_service.h"
 #include "native_client/src/trusted/service_runtime/include/sys/errno.h"
 #include "native_client/src/trusted/service_runtime/include/sys/fcntl.h"
@@ -233,6 +234,7 @@ static void NaClSecureReverseClientCallback(
       (struct NaClSecureService *) state;
   struct NaClApp                    *nap = self->nap;
   struct NaClManifestProxy          *manifest_proxy;
+  struct NaClRippleLedgerService    *ripple_ledger_service;
   struct NaClReverseHostInterface   *reverse_host_interface;
   struct NaClReverseQuotaInterface  *reverse_quota_interface;
   UNREFERENCED_PARAMETER(tif);
@@ -317,6 +319,33 @@ static void NaClSecureReverseClientCallback(
                      NaClDescRef(manifest_proxy->base.bound_and_cap[1]));
   NaClXMutexUnlock(&nap->mu);
 
+  ripple_ledger_service = (struct NaClRippleLedgerService *)
+      malloc(sizeof *ripple_ledger_service);
+  if (NULL == ripple_ledger_service ||
+      !NaClRippleLedgerServiceCtor(ripple_ledger_service,
+                                   NaClAddrSpSquattingThreadIfFactoryFunction,
+                                   (void *) nap,
+                                   self)) {
+    NaClLog(LOG_FATAL, "Ripple ledger service ctor failed\n");
+    goto cleanup_ripple_ledger_service;
+  }
+
+  /*
+   * NaClSimpleServiceStartServiceThread requires the nap->mu lock.
+   */
+  if (!NaClSimpleServiceStartServiceThread((struct NaClSimpleService *)
+                                           ripple_ledger_service)) {
+    NaClLog(LOG_FATAL, "RippleLedgerService start service failed\n");
+    goto cleanup_ripple_ledger_service;
+  }
+
+  NaClXMutexLock(&nap->mu);
+  (*NACL_VTBL(NaClNameService, nap->name_service)->
+    CreateDescEntry)(nap->name_service,
+                     "RippleLedgerService", NACL_ABI_O_RDWR,
+                     NaClDescRef(ripple_ledger_service->base.bound_and_cap[1]));
+  NaClXMutexUnlock(&nap->mu);
+
   NaClXMutexLock(&self->mu);
   self->reverse_channel_initialization_state =
     NACL_REVERSE_CHANNEL_INITIALIZED;
@@ -325,6 +354,8 @@ static void NaClSecureReverseClientCallback(
 
  cleanup_manifest_proxy:
   NaClRefCountSafeUnref((struct NaClRefCount *) manifest_proxy);
+ cleanup_ripple_ledger_service:
+  //NaClRefCountSafeUnref((struct NaClRefCount *) ripple_ledger_service);
  cleanup_reverse_quota_interface:
   NaClRefCountSafeUnref((struct NaClRefCount *) reverse_quota_interface);
  cleanup_reverse_host_interface:

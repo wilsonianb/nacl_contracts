@@ -20,7 +20,5 @@
 #define NACL_REVERSE_REQUEST_QUOTA_FOR_WRITE  "request_quota_for_write:Cll:l"
 #define NACL_REVERSE_CONTROL_CREATE_PROCESS_INTERLOCKED \
   "create_process_interlocked::hhi"
-//#define NACL_REVERSE_READ_RIPPLE_LEDGER	    "read_ripple_ledger:s:s"
-#define NACL_REVERSE_READ_RIPPLE_LEDGER	      "read_ripple_ledger:s:C"
 
-#endif
+#endif /* NATIVE_CLIENT_SRC_TRUSTED_REVERSE_SERVICE_REVERSE_CONTROL_RPC_H_ */

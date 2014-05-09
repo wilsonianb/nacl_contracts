@@ -2132,6 +2132,7 @@ def MakeBaseTrustedEnv(platform=None):
       'src/trusted/perf_counter/build.scons',
       'src/trusted/platform_qualify/build.scons',
       'src/trusted/python_bindings/build.scons',
+      'src/trusted/ripple_ledger_service/build.scons',
       'src/trusted/reverse_service/build.scons',
       'src/trusted/seccomp_bpf/build.scons',
       'src/trusted/sel_universal/build.scons',
