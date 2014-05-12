@@ -352,10 +352,10 @@ static void NaClSecureReverseClientCallback(
   NaClXCondVarBroadcast(&self->cv);
   NaClXMutexUnlock(&self->mu);
 
+ cleanup_ripple_ledger_service:
+  NaClRefCountSafeUnref((struct NaClRefCount *) ripple_ledger_service);
  cleanup_manifest_proxy:
   NaClRefCountSafeUnref((struct NaClRefCount *) manifest_proxy);
- cleanup_ripple_ledger_service:
-  //NaClRefCountSafeUnref((struct NaClRefCount *) ripple_ledger_service);
  cleanup_reverse_quota_interface:
   NaClRefCountSafeUnref((struct NaClRefCount *) reverse_quota_interface);
  cleanup_reverse_host_interface:
