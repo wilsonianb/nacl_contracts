@@ -1,7 +1,0 @@
-K 10
-svn:ignore
-V 35
-code_hygiene.pyc
-perf_expectations
-
-END
