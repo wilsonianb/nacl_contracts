@@ -1,18 +1,18 @@
 # DEPS files look like -*- Python -*-
 
 vars = {
-  "chrome_rev": "254462",
+  "chrome_rev": "266471",
   # NOTE!  These four should match their counterparts in chromium/src/DEPS.
   # Be sure to update them when updating chrome_rev, above.
   # (This is not essential for Breakpad, because we do not use its code
   # in the build that goes into Chromium.  But might as well update it too.)
   "gtest_rev": "643",
-  "gyp_rev": "1857",
-  "lss_rev": "24",
-  "breakpad_rev": "1271",
+  "gyp_rev": "1895",
+  "lss_rev": "26",
+  "breakpad_rev": "1318",
 
   "lcov_rev": "149720",
-  "tools_rev": "12970",
+  "tools_rev": "13077",
 
   # These are URL prefixes rather than revision numbers, so keep them separate.
   "chromium_trunk": "http://src.chromium.org/svn/trunk",
@@ -25,7 +25,7 @@ deps = {
     ((Var("googlecode_url") % "google-breakpad") + "/trunk@" +
      Var('breakpad_rev')),
   "testing/gtest":
-    "http://googletest.googlecode.com/svn/trunk@" + Var("gtest_rev"),
+    (Var("googlecode_url") % "googletest") + "/trunk@" + Var("gtest_rev"),
   "third_party":
     Var("native_client_trunk") + "/src/third_party@" + Var("tools_rev"),
   "validator_snapshots":
@@ -40,7 +40,7 @@ deps = {
   "tools/clang":
     Var("chromium_trunk") + "/src/tools/clang@" + Var("chrome_rev"),
   "tools/gyp":
-    "http://gyp.googlecode.com/svn/trunk@" + Var("gyp_rev"),
+    (Var("googlecode_url") % "gyp") + "/trunk@" + Var("gyp_rev"),
   "tools/valgrind":
     Var("chromium_trunk") + "/src/tools/valgrind@" + Var("chrome_rev"),
 }
@@ -71,8 +71,9 @@ hooks = [
   # Pull NaCl Toolchain binaries. This needs to be before running GYP below.
   {
     "pattern": ".",
-    "action": ["python", "native_client/build/download_toolchains.py",
-               "--keep", "--arm-untrusted", "native_client/TOOL_REVISIONS"
+    "action": ["python",
+               "native_client/build/package_version/package_version.py",
+               "sync", "--extract",
     ],
   },
   # Pull GN binaries. This needs to be before running GYP below.
@@ -135,7 +136,7 @@ hooks = [
   {
     "name": "clang",
     "pattern": ".",
-    "action": ["python", "tools/clang/scripts/update.py", "--mac-only"],
+    "action": ["python", "tools/clang/scripts/update.py", "--if-needed"],
   },
   # Run GYP, do this last to make sure all the tools are present first.
   {

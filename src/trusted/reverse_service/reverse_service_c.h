@@ -105,16 +105,6 @@ struct NaClReverseInterfaceVtbl {
    */
 
   /*
-   * Stores the manifest keys into the |buffer| of size |nbytes|.
-   * Returns the number of bytes copied if successful, otherwise
-   * returns the size required if |buffer| is not large enough.
-   */
-  size_t                        (*EnumerateManifestKeys)(
-      struct NaClReverseInterface   *self,
-      char                          *buffer,
-      size_t                        buffer_bytes);
-
-  /*
    * Opens manifest entry specified by |url_key|. Returns 1 if
    * successful and stores the file descriptor in |out_desc|, otherwise
    * returns 0.
@@ -214,26 +204,13 @@ int NaClReverseInterfaceCtor_protected(
 
 void NaClReverseInterfaceDtor(struct NaClRefCount *vself);
 
-void NaClReverseInterfaceLog(
-    struct NaClReverseInterface   *self,
-    char const                    *message);
-
 void NaClReverseInterfaceStartupInitializationComplete(
     struct NaClReverseInterface   *self);
-
-size_t NaClReverseInterfaceEnumerateManifestKeys(
-    struct NaClReverseInterface   *self,
-    char                          *buffer,
-    size_t                        buffer_bytes);
 
 int NaClReverseInterfaceOpenManifestEntry(
     struct NaClReverseInterface   *self,
     char const                    *url_key,
     struct NaClFileInfo           *info);
-
-int NaClReverseInterfaceCloseManifestEntry(
-    struct NaClReverseInterface   *self,
-    int32_t                       desc);
 
 void NaClReverseInterfaceReportCrash(
     struct NaClReverseInterface   *self);

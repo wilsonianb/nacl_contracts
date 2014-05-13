@@ -7,7 +7,6 @@
 
 import fnmatch
 import os
-import re
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -43,8 +42,7 @@ TARGET_TOOLS = [ tool + '_FOR_TARGET=' + PnaclTool(name)
 
 def MakeCommand():
   make_command = ['make']
-  if (not pynacl.platform.IsWindows() and
-      not command.Runnable.use_cygwin):
+  if not pynacl.platform.IsWindows():
     # The make that ships with msys sometimes hangs when run with -j.
     # The ming32-make that comes with the compiler itself reportedly doesn't
     # have this problem, but it has issues with pathnames with LLVM's build.
@@ -58,7 +56,7 @@ def Mangle(component_name, extra):
   return component_name + '_' + pynacl.gsd_storage.LegalizeName(extra)
 
 def TripleIsWindows(t):
-  return fnmatch.fnmatch(t, '*-mingw32*') or fnmatch.fnmatch(t, '*cygwin*')
+  return fnmatch.fnmatch(t, '*-mingw32*')
 
 # Copy the driver scripts to the working directory, with extra config to set
 # paths to the compiled host binaries. This could also be done by injecting -B
@@ -75,6 +73,25 @@ def CopyDriverForTargetLib(host):
                        host_64bit=fnmatch.fnmatch(host, '*x86_64*'),
                        extra_config=['BPREFIXES=%(abs_' + Mangle('llvm', host) +
                         ')s %(abs_' + Mangle('binutils_pnacl', host) + ')s'])
+      ]
+
+
+# Copy the compiled bitcode archives used for linking C programs into the the
+# current working directory. This allows the driver in the working directory to
+# be used in cases which need the ability to link pexes (e.g. CMake
+# try-compiles, LLVM testsuite, or libc++ testsuite). For now this also requires
+# a build of libnacl however, which is driven by the buildbot script or
+# external test script. TODO(dschuff): add support to drive the LLVM and libcxx
+# test suites from toolchain_build rules.
+def CopyBitcodeCLibs(bias_arch):
+  return [
+      command.RemoveDirectory('usr'),
+      command.Mkdir('usr'),
+      command.Command('cp -r %(' +
+                      Mangle('abs_libs_support_bitcode', bias_arch) +
+                      ')s usr', shell=True),
+      command.Command('cp -r %(' + Mangle('abs_newlib', bias_arch) +
+                      ')s/* usr', shell=True),
       ]
 
 
@@ -187,7 +204,7 @@ def BuildLibgccEhCmd(sourcefile, output, arch):
 
 
 
-def TargetLibsSrc(GitSyncCmd):
+def TargetLibsSrc(GitSyncCmds):
   newlib_sys_nacl = command.path.join('%(output)s',
                                       'newlib', 'libc', 'sys', 'nacl')
   source = {
@@ -197,8 +214,8 @@ def TargetLibsSrc(GitSyncCmd):
           'commands': [
               # Clean any headers exported from the NaCl tree before syncing.
               command.CleanGitWorkingDir(
-                  '%(output)s', os.path.join('newlib', 'libc', 'include')),
-              GitSyncCmd('nacl-newlib')] +
+                  '%(output)s', os.path.join('newlib', 'libc', 'include'))] +
+              GitSyncCmds('nacl-newlib') +
               # Remove newlib versions of headers that will be replaced by
               # headers from the NaCl tree.
               [command.RemoveDirectory(command.path.join(newlib_sys_nacl,
@@ -224,30 +241,22 @@ def TargetLibsSrc(GitSyncCmd):
       'libcxx_src': {
           'type': 'source',
           'output_dirname': 'libcxx',
-          'commands': [
-              GitSyncCmd('libcxx'),
-          ]
+          'commands': GitSyncCmds('libcxx'),
       },
       'libcxxabi_src': {
           'type': 'source',
           'output_dirname': 'libcxxabi',
-          'commands': [
-              GitSyncCmd('libcxxabi'),
-          ]
+          'commands': GitSyncCmds('libcxxabi'),
       },
       'compiler_rt_src': {
           'type': 'source',
           'output_dirname': 'compiler-rt',
-          'commands': [
-              GitSyncCmd('compiler-rt'),
-          ]
+          'commands': GitSyncCmds('compiler-rt'),
       },
       'gcc_src': {
           'type': 'source',
           'output_dirname': 'pnacl-gcc',
-          'commands': [
-              GitSyncCmd('gcc'),
-          ]
+          'commands': GitSyncCmds('gcc'),
       },
   }
   return source
@@ -315,10 +324,12 @@ def BitcodeLibs(host, bias_arch):
           'type': 'build',
           'output_subdir': BcSubdir('usr', bias_arch),
           'dependencies': ['libcxx_src', 'libcxxabi_src', 'llvm_src', 'gcc_src',
-                           H('llvm'), H('binutils_pnacl'), B('newlib')],
+                           H('llvm'), H('binutils_pnacl'), B('newlib'),
+                           B('libs_support_bitcode')],
           'inputs': { 'driver': os.path.join(NACL_DIR, 'pnacl', 'driver')},
           'commands' :
-              CopyDriverForTargetLib(host) + [
+              CopyDriverForTargetLib(host) +
+              CopyBitcodeCLibs(bias_arch) + [
               command.SkipForIncrementalCommand(
                   ['cmake', '-G', 'Unix Makefiles',
                    '-DCMAKE_C_COMPILER_WORKS=1',
@@ -327,6 +338,7 @@ def BitcodeLibs(host, bias_arch):
                    '-DCMAKE_BUILD_TYPE=Release',
                    '-DCMAKE_C_COMPILER=' + PnaclTool('clang'),
                    '-DCMAKE_CXX_COMPILER=' + PnaclTool('clang++'),
+                   '-DCMAKE_SYSTEM_NAME=nacl',
                    '-DCMAKE_AR=' + PnaclTool('ar'),
                    '-DCMAKE_NM=' + PnaclTool('nm'),
                    '-DCMAKE_RANLIB=' + PnaclTool('ranlib'),
@@ -337,10 +349,15 @@ def BitcodeLibs(host, bias_arch):
                    '-DCMAKE_CXX_FLAGS=-std=gnu++11 ' + LibCxxCflags(bias_arch),
                    '-DLIT_EXECUTABLE=' + command.path.join(
                        '%(llvm_src)s', 'utils', 'lit', 'lit.py'),
+                   # The lit flags are used by the libcxx testsuite, which is
+                   # currenty driven by an external script.
                    '-DLLVM_LIT_ARGS=--verbose  --param shell_prefix="' +
-                    os.path.join(NACL_DIR,'run.py') + '-arch env --retries=1" '+
+                    os.path.join(NACL_DIR,'run.py') +' -arch env --retries=1" '+
                     '--param exe_suffix=".pexe" --param use_system_lib=true ' +
-                    '--param link_flags="-std=gnu++11 --pnacl-exceptions=sjlj"',
+                    '--param link_flags="-std=gnu++11 --pnacl-exceptions=sjlj '+
+                    '-L' + os.path.join(
+                        NACL_DIR,
+                        'toolchain/linux_x86/pnacl_newlib/sdk/lib') + '"',
                    '-DLIBCXX_ENABLE_CXX0X=0',
                    '-DLIBCXX_ENABLE_SHARED=0',
                    '-DLIBCXX_CXX_ABI=libcxxabi',
@@ -454,8 +471,8 @@ def NativeLibs(host, arch):
   def H(component_name):
     return Mangle(component_name, host)
   setjmp_arch = arch
-  if setjmp_arch == 'x86-32-nonsfi':
-    setjmp_arch = 'x86-32'
+  if setjmp_arch.endswith('-nonsfi'):
+    setjmp_arch = setjmp_arch[:-len('-nonsfi')]
   libs = {
       Mangle('libs_support_native', arch): {
           'type': 'build',
@@ -481,6 +498,7 @@ def NativeLibs(host, arch):
                                    output_dir='%(output)s'),
               # libcrt_platform.a
               BuildTargetNativeCmd('pnacl_irt.c', 'pnacl_irt.o', arch),
+              BuildTargetNativeCmd('relocate.c', 'relocate.o', arch),
               BuildTargetNativeCmd(
                   'setjmp_%s.S' % setjmp_arch.replace('-', '_'),
                   'setjmp.o', arch),
@@ -534,7 +552,7 @@ def NativeLibs(host, arch):
           ],
       },
   }
-  if arch != 'x86-32-nonsfi':
+  if not arch.endswith('-nonsfi'):
     libs.update({
       Mangle('libgcc_eh', arch): {
           'type': 'build',
@@ -570,14 +588,21 @@ def UnsandboxedIRT(arch):
       Mangle('unsandboxed_irt', arch): {
           'type': 'build',
           'output_subdir': 'lib-' + arch,
-          'inputs': { 'support': os.path.join(NACL_DIR, 'pnacl', 'support') },
+          # This lib #includes
+          # arbitrary stuff from native_client/src/{include,untrusted,trusted}
+          'inputs': { 'support': os.path.join(NACL_DIR, 'src', 'nonsfi', 'irt'),
+                      'include': os.path.join(NACL_DIR, 'src'), },
           'commands': [
+              # The NaCl headers insist on having a platform macro such as
+              # NACL_LINUX defined, but unsandboxed_irt.c does not itself use
+              # any of these macros, so defining NACL_LINUX here even on
+              # non-Linux systems is OK.
               # TODO(dschuff): this include path breaks the input encapsulation
               # for build rules.
               command.Command([
                   'gcc', '-m32', '-O2', '-Wall', '-Werror',
                   '-I%(top_srcdir)s/..', '-DNACL_LINUX=1',
-                  '-c', command.path.join('%(support)s', 'unsandboxed_irt.c'),
+                  '-c', command.path.join('%(support)s', 'irt_interfaces.c'),
                   '-o', command.path.join('%(output)s', 'unsandboxed_irt.o')]),
           ],
       },

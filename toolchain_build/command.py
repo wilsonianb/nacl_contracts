@@ -6,7 +6,9 @@
 """Class capturing a command invocation as data."""
 
 import inspect
+import glob
 import hashlib
+import logging
 import os
 import shutil
 import sys
@@ -65,25 +67,21 @@ def PlatformEnvironment(extra_paths):
   env = os.environ.copy()
   paths = []
   if sys.platform == 'win32':
-    if Runnable.use_cygwin:
-      # Use the hermetic cygwin.
-      paths = [os.path.join(NACL_DIR, 'cygwin', 'bin')]
-    else:
-      # TODO(bradnelson): switch to something hermetic.
-      mingw = os.environ.get('MINGW', r'c:\mingw')
-      msys = os.path.join(mingw, 'msys', '1.0')
-      if not os.path.exists(msys):
-        msys = os.path.join(mingw, 'msys')
-      # We need both msys (posix like build environment) and MinGW (windows
-      # build of tools like gcc). We add <MINGW>/msys/[1.0/]bin to the path to
-      # get sh.exe. We add <MINGW>/bin to allow direct invocation on MinGW
-      # tools. We also add an msys style path (/mingw/bin) to get things like
-      # gcc from inside msys.
-      paths = [
-          '/mingw/bin',
-          os.path.join(mingw, 'bin'),
-          os.path.join(msys, 'bin'),
-      ]
+    # TODO(bradnelson): switch to something hermetic.
+    mingw = os.environ.get('MINGW', r'c:\mingw')
+    msys = os.path.join(mingw, 'msys', '1.0')
+    if not os.path.exists(msys):
+      msys = os.path.join(mingw, 'msys')
+    # We need both msys (posix like build environment) and MinGW (windows
+    # build of tools like gcc). We add <MINGW>/msys/[1.0/]bin to the path to
+    # get sh.exe. We add <MINGW>/bin to allow direct invocation on MinGW
+    # tools. We also add an msys style path (/mingw/bin) to get things like
+    # gcc from inside msys.
+    paths = [
+        '/mingw/bin',
+        os.path.join(mingw, 'bin'),
+        os.path.join(msys, 'bin'),
+    ]
   env['PATH'] = os.pathsep.join(
       paths + extra_paths + env.get('PATH', '').split(os.pathsep))
   return env
@@ -91,8 +89,6 @@ def PlatformEnvironment(extra_paths):
 
 class Runnable(object):
   """An object representing a single command."""
-  use_cygwin = False
-
   def __init__(self, func, *args, **kwargs):
     """Construct a runnable which will call 'func' with 'args' and 'kwargs'.
 
@@ -259,13 +255,19 @@ def RemoveDirectory(path):
   return Runnable(remove, path)
 
 
-def Remove(path):
-  """Convenience method for generating a command to remove a file."""
-  def remove(subst, path):
-    path = subst.SubstituteAbsPaths(path)
-    if os.path.exists(path):
-      os.remove(path)
-  return Runnable(remove, path)
+def Remove(*args):
+  """Convenience method for generating a command to remove files."""
+  def remove(subst, *args):
+    for arg in args:
+      path = subst.SubstituteAbsPaths(arg)
+      expanded = glob.glob(path)
+      if len(expanded) == 0:
+        logging.debug('command.Remove: argument %s (substituted from %s) '
+                      'does not match any file' %
+                      (path, arg))
+      for f in expanded:
+        os.remove(f)
+  return Runnable(remove, *args)
 
 
 def Rename(src, dst):
@@ -322,11 +324,13 @@ def GenerateGitPatches(git_dir, info):
     git_dir_flag = '--git-dir=' + subst.SubstituteAbsPaths(git_dir)
     basename = info['upstream-name']
 
-    def generatePatch(src_rev, dst_rev, suffix):
+    patch_files = []
+
+    def generatePatch(description, src_rev, dst_rev, suffix):
       src_prefix = '--src-prefix=' + basename + '/'
       dst_prefix = '--dst-prefix=' + basename + suffix + '/'
-      patch_file = subst.SubstituteAbsPaths(
-          path.join('%(output)s', basename + suffix + '.patch'))
+      patch_name = basename + suffix + '.patch'
+      patch_file = subst.SubstituteAbsPaths(path.join('%(output)s', patch_name))
       git_args = [git_dir_flag, 'diff',
                   '--patch-with-stat', '--ignore-space-at-eol', '--full-index',
                   '--no-ext-diff', '--no-color', '--no-renames',
@@ -336,6 +340,7 @@ def GenerateGitPatches(git_dir, info):
           pynacl.repo_tools.GitCmd() + git_args,
           stdout=patch_file
       )
+      patch_files.append((description, patch_name))
 
     def revParse(args):
       output = pynacl.repo_tools.CheckGitOutput([git_dir_flag] + args)
@@ -365,9 +370,26 @@ def GenerateGitPatches(git_dir, info):
       # hex digits of the commit ID is what Git usually produces
       # for --abbrev-commit behavior, 'git describe', etc.
       suffix = '-g' + upstream_snapshot[:7]
-      generatePatch(upstream_base, upstream_snapshot, suffix)
+      generatePatch('Patch the release up to the upstream snapshot version.',
+                    upstream_base, upstream_snapshot, suffix)
 
     if rev != upstream_snapshot:
       # We're using local changes, so generate a patch of those.
-      generatePatch(upstream_snapshot, rev, suffix + '-nacl')
+      generatePatch('Apply NaCl-specific changes.',
+                    upstream_snapshot, rev, suffix + '-nacl')
+
+    with open(subst.SubstituteAbsPaths(path.join('%(output)s',
+                                                 info['name'] + '.series')),
+              'w') as f:
+      f.write("""\
+# This is a "series file" in the style used by the "quilt" tool.
+# It describes how to unpack and apply patches to produce the source
+# tree of the %(name)s component of a toolchain targetting Native Client.
+
+# Source: %(upstream-name)s.tar
+"""
+              % info)
+      for patch in patch_files:
+        f.write('\n# %s\n%s\n' % patch)
+
   return Runnable(generatePatches, git_dir, info)

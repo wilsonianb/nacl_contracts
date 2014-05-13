@@ -246,13 +246,13 @@ setup-biased-bitcode-env() {
       LIB_CPP_INSTALL_DIR="${INSTALL_ROOT}/usr-bc-${arch}"
       ;;
     x86-32)
-      BIASED_BC_CFLAGS="--target=i686-nacl"
+      BIASED_BC_CFLAGS="--target=i686-unknown-nacl"
       NEWLIB_INSTALL_DIR="${INSTALL_ROOT}/usr-bc-${arch}"
       INSTALL_LIB="${INSTALL_ROOT}/lib-bc-${arch}"
       LIB_CPP_INSTALL_DIR="${INSTALL_ROOT}/usr-bc-${arch}"
       ;;
     x86-64)
-      BIASED_BC_CFLAGS="--target=x86_64-nacl"
+      BIASED_BC_CFLAGS="--target=x86_64-unknown-nacl"
       NEWLIB_INSTALL_DIR="${INSTALL_ROOT}/usr-bc-${arch}"
       INSTALL_LIB="${INSTALL_ROOT}/lib-bc-${arch}"
       LIB_CPP_INSTALL_DIR="${INSTALL_ROOT}/usr-bc-${arch}"
@@ -451,7 +451,7 @@ libs() {
     newlib ${arch}
   done
   libs-support
-  for arch in arm x86-32 x86-64 mips32 x86-32-nonsfi; do
+  for arch in arm x86-32 x86-64 mips32 arm-nonsfi x86-32-nonsfi; do
     dummy-irt-shim ${arch}
   done
   compiler-rt-all
@@ -1120,6 +1120,7 @@ compiler-rt-all() {
   compiler-rt mips32
   compiler-rt x86-32
   compiler-rt x86-64
+  compiler-rt arm-nonsfi
   compiler-rt x86-32-nonsfi
 }
 
@@ -1254,6 +1255,7 @@ lib-cpp-configure() {
       cmake -G "Unix Makefiles" \
       -DCMAKE_CXX_COMPILER_WORKS=1 \
       -DCMAKE_C_COMPILER_WORKS=1 \
+      -DCMAKE_SYSTEM_NAME=nacl \
       -DCMAKE_INSTALL_PREFIX="${LIB_CPP_INSTALL_DIR}" \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_C_COMPILER="${PNACL_CC}" \
@@ -2329,7 +2331,7 @@ libs-support() {
   libs-support-bitcode x86-64
 
   local arch
-  for arch in arm x86-32 x86-64 mips32 x86-32-nonsfi; do
+  for arch in arm x86-32 x86-64 mips32 arm-nonsfi x86-32-nonsfi; do
     libs-support-native ${arch}
   done
 
@@ -2427,6 +2429,8 @@ libs-support-native() {
   local setjmp_arch="$arch"
   if [ "$setjmp_arch" = "x86-32-nonsfi" ]; then
     setjmp_arch=x86-32
+  elif [ "$setjmp_arch" = "arm-nonsfi" ]; then
+    setjmp_arch=arm
   fi
   ${cc_cmd} -c setjmp_${setjmp_arch/-/_}.S -o "${tmpdir}"/setjmp.o
 
@@ -2464,11 +2468,13 @@ libs-support-unsandboxed() {
     local destdir="${INSTALL_LIB_NATIVE}"${arch}
     mkdir -p ${destdir}
     # The NaCl headers insist on having a platform macro such as
-    # NACL_LINUX defined, but unsandboxed_irt.c does not itself use
-    # any of these macros, so defining NACL_LINUX here even on
-    # non-Linux systems is OK.
-    gcc -m32 -O2 -Wall -Werror -I${NACL_ROOT}/.. -DNACL_LINUX=1 -c \
-        ${PNACL_SUPPORT}/unsandboxed_irt.c -o ${destdir}/unsandboxed_irt.o
+    # NACL_LINUX defined, but nonsfi/irt/irt_interfaces.c does not
+    # itself use any of these macros, so defining NACL_LINUX here even
+    # on non-Linux systems is OK.
+    gcc -m32 -O2 -Wall -Werror -I${NACL_ROOT}/.. -c \
+        -DNACL_LINUX=1 -DDEFINE_MAIN \
+        ${NACL_ROOT}/src/nonsfi/irt/irt_interfaces.c \
+        -o ${destdir}/unsandboxed_irt.o
   fi
 }
 
@@ -2549,15 +2555,12 @@ sdk-headers() {
 
   StepBanner "SDK" "Install headers"
   spushd "${NACL_ROOT}"
-  # TODO(pnacl-team): remove this pnaclsdk_mode once we have a better story
-  # about host binary type (x86-32 vs x86-64).  SCons only knows how to use
-  # x86-32 host binaries right now, so we need pnaclsdk_mode to override that.
   RunWithLog "sdk.headers" \
       ./scons \
       "${SCONS_ARGS[@]}" \
       ${extra_flags} \
       platform=${neutral_platform} \
-      pnaclsdk_mode="custom:${INSTALL_ROOT}" \
+      pnacl_newlib_dir="${INSTALL_ROOT}" \
       install_headers \
       includedir="$(PosixToSysPath "${SDK_INSTALL_INCLUDE}")"
   spopd
@@ -2572,13 +2575,12 @@ sdk-libs() {
   local neutral_platform="x86-32"
 
   spushd "${NACL_ROOT}"
-  # See above TODO about pnaclsdk_mode.
   RunWithLog "sdk.libs.bitcode" \
       ./scons \
       "${SCONS_ARGS[@]}" \
       ${extra_flags} \
       platform=${neutral_platform} \
-      pnaclsdk_mode="custom:${INSTALL_ROOT}" \
+      pnacl_newlib_dir="${INSTALL_ROOT}" \
       install_lib \
       libdir="$(PosixToSysPath "${SDK_INSTALL_LIB}")"
   spopd
@@ -2592,13 +2594,12 @@ sdk-private-libs() {
   spushd "${NACL_ROOT}"
 
   local neutral_platform="x86-32"
-  # See above TODO about pnaclsdk_mode.
   RunWithLog "sdk.libs_private.bitcode" \
     ./scons \
     -j${PNACL_CONCURRENCY} \
     bitcode=1 \
     platform=${neutral_platform} \
-    pnaclsdk_mode="custom:${INSTALL_ROOT}" \
+    pnacl_newlib_dir="${INSTALL_ROOT}" \
     --verbose \
     libnacl_sys_private \
     libpthread_private \
@@ -2739,15 +2740,16 @@ driver-install-python() {
 }
 
 feature-version-file-install() {
+  local install_root=$1
   # Scons tests can check this version number to decide whether to
   # enable tests for toolchain bug fixes or new features.  This allows
   # tests to be enabled on the toolchain buildbots/trybots before the
-  # new toolchain version is rolled into TOOL_REVISIONS (i.e. before
+  # new toolchain version is rolled into the pinned version (i.e. before
   # the tests would pass on the main NaCl buildbots/trybots).
   #
   # If you are adding a test that depends on a toolchain change, you
   # can increment this version number manually.
-  echo 4 > "${INSTALL_ROOT}/FEATURE_VERSION"
+  echo 5 > "${install_root}/FEATURE_VERSION"
 }
 
 # The driver is a simple python script which changes its behavior
@@ -2791,7 +2793,7 @@ HOST_ARCH=${HOST_ARCH}""" > "${destdir}"/driver.conf
   # of the drivers themselves.
   DumpAllRevisions > "${destdir}/REV"
 
-  feature-version-file-install
+  feature-version-file-install ${INSTALL_ROOT}
 }
 
 #@ driver-install-translator - Install driver scripts for translator component
@@ -2801,6 +2803,8 @@ driver-install-translator() {
   driver-install-python "${destdir}" pnacl-translate.py pnacl-nativeld.py
 
   echo """HAS_FRONTEND=0""" > "${destdir}"/driver.conf
+
+  feature-version-file-install ${INSTALL_TRANSLATOR}
 }
 
 ######################################################################
@@ -2815,7 +2819,7 @@ driver-install-translator() {
 
 DumpAllRevisions() {
   one-line-rev-info ${NACL_ROOT}
-  for d in ${PNACL_ROOT}/git/*/ ; do
+  for d in ${PNACL_GIT_ROOT}/*/ ; do
     one-line-rev-info $d
   done
 }
@@ -3147,8 +3151,6 @@ show-config() {
   env | grep PNACL
   Banner "uname info for builder:"
   uname -a
-  Banner "Revisions:"
-  DumpAllRevisions
 }
 
 #@ help                  - Usage information.
@@ -3342,7 +3344,6 @@ function-completions() {
 ######################################################################
 
 mkdir -p "${INSTALL_ROOT}"
-PackageCheck
 
 if [ $# = 0 ]; then set -- help; fi  # Avoid reference to undefined $1.
 

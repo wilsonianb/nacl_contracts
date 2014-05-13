@@ -18,6 +18,7 @@
 *.slo
 *.swp
 *.suo
+*.svn
 *.targets
 *.user
 *.vcproj
@@ -31,6 +32,7 @@ testserver.log
 .project/
 .pydevproject/
 .settings/
+.svn/
 hg/
 toolchain/hg-build/
 toolchain/hg-log/
@@ -66,3 +68,4 @@ pnacl/git/
 pnacl/src/
 
 tags
+.tags

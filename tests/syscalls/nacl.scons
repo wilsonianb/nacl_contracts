@@ -14,8 +14,15 @@ if 'TRUSTED_ENV' in env and env['TRUSTED_ENV'].Bit('windows'):
 
 env.ComponentLibrary('syscall_test_framework', ['test.cc'])
 
-env.Append(CPPDEFINES=[['PNACL_UNSANDBOXED',
-                        str(int(env.Bit('pnacl_unsandboxed')))]])
+env.Append(CPPDEFINES=[['NONSFI_MODE',
+                        str(int(env.Bit('pnacl_unsandboxed') or
+                                env.Bit('nonsfi_nacl')))]])
+
+# The syscall tests need to know if they are compiling with the IRT
+# since glibc only partially functions without the IRT and therefore
+# some tests don't make sense.
+env.Append(CPPDEFINES=[['TESTS_USE_IRT', str(int(env.Bit('tests_use_irt')))]])
+
 syscalls_nexe = env.ComponentProgram('syscalls',
                                      'syscalls.cc',
                                      EXTRA_LIBS=['${PTHREAD_LIBS}',
@@ -29,7 +36,7 @@ syscalls_nexe = env.ComponentProgram('syscalls',
 # TODO(bradnelson): find a better way to make the plumbing on this work.
 inputs = env.Command(env.File('file_ok_rdwr.txt'), env.File('file_ok.txt'),
            [Copy(env.File('file_ok_rdwr.txt'), env.File('file_ok.txt')),
-            Chmod(env.File('file_ok_rdwr.txt'), 0755)])
+            Chmod(env.File('file_ok_rdwr.txt'), 0644)])
 Default(inputs)
 
 # syscalls_test exercise open/read/write, so need filesystem access
@@ -210,8 +217,7 @@ env.AddNodeToTestSuite(node,
 # infrastructure doesn't like empty files as a patch, so try jobs
 # would always fail.
 
-file_handle, file_path = env.MakeTempFile(prefix='tmp_syscalls')
-os.close(file_handle)
+file_path = env.MakeEmptyFile(prefix='tmp_syscalls')
 
 sysconf_nprocessors_nexe = env.ComponentProgram('sysconf_nprocessors_test',
                                                 ['sysconf_nprocessors.c'],

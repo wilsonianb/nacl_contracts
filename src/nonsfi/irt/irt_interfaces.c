@@ -4,6 +4,8 @@
  * found in the LICENSE file.
  */
 
+#include "native_client/src/nonsfi/irt/irt_interfaces.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -478,7 +480,7 @@ static void irt_stub_func(const char *name) {
 
 #define DEFINE_STUB(name) \
     static void irt_stub_##name() { irt_stub_func(#name); }
-#define USE_STUB(s, name) (typeof(s.name)) irt_stub_##name
+#define USE_STUB(s, name) (__typeof__(s.name)) irt_stub_##name
 
 static const struct nacl_irt_basic irt_basic = {
   irt_exit,
@@ -513,26 +515,26 @@ static const struct nacl_irt_tls irt_tls = {
   tls_get,
 };
 
-const static struct nacl_irt_thread irt_thread = {
+static const struct nacl_irt_thread irt_thread = {
   thread_create,
   thread_exit,
   thread_nice,
 };
 
 #if defined(__linux__)
-const static struct nacl_irt_futex irt_futex = {
+static const struct nacl_irt_futex irt_futex = {
   futex_wait_abs,
   futex_wake,
 };
 
-const static struct nacl_irt_clock irt_clock = {
+static const struct nacl_irt_clock irt_clock = {
   irt_clock_getres,
   irt_clock_gettime,
 };
 #else
 DEFINE_STUB(futex_wait_abs)
 DEFINE_STUB(futex_wake)
-const static struct nacl_irt_futex irt_futex = {
+static const struct nacl_irt_futex irt_futex = {
   USE_STUB(irt_futex, futex_wait_abs),
   USE_STUB(irt_futex, futex_wake),
 };
@@ -547,7 +549,7 @@ DEFINE_STUB(chmod)
 DEFINE_STUB(access)
 DEFINE_STUB(readlink)
 DEFINE_STUB(utimes)
-const static struct nacl_irt_dev_filename irt_dev_filename = {
+static const struct nacl_irt_dev_filename irt_dev_filename = {
   irt_open,
   irt_stat,
   irt_mkdir,
@@ -566,7 +568,7 @@ const static struct nacl_irt_dev_filename irt_dev_filename = {
   USE_STUB(irt_dev_filename, utimes),
 };
 
-const static struct nacl_irt_dev_getpid irt_dev_getpid = {
+static const struct nacl_irt_dev_getpid irt_dev_getpid = {
   irt_getpid,
 };
 
@@ -608,7 +610,8 @@ static size_t irt_interface_query(const char *interface_ident,
   return 0;
 }
 
-int main(int argc, char **argv, char **environ) {
+int nacl_irt_nonsfi_entry(int argc, char **argv, char **environ,
+                          nacl_entry_func_t entry_func) {
   /* Find size of environ array. */
   size_t env_count = 0;
   while (environ[env_count] != NULL)
@@ -630,8 +633,8 @@ int main(int argc, char **argv, char **environ) {
   data[pos++] = env_count;
   data[pos++] = argc;
   /* Copy arrays, with terminators. */
-  int i;
-  for (i = 0; i < argc; i++)
+  size_t i;
+  for (i = 0; i < (size_t) argc; i++)
     data[pos++] = (uintptr_t) argv[i];
   data[pos++] = 0;
   for (i = 0; i < env_count; i++)
@@ -645,6 +648,12 @@ int main(int argc, char **argv, char **environ) {
   data[pos++] = 0;
   assert(pos == count);
 
+  entry_func(data);
+  return 1;
+}
+
+#if defined(DEFINE_MAIN)
+int main(int argc, char **argv, char **environ) {
   /*
    * On Linux, we rename _start() to _user_start() to avoid a clash
    * with the "_start" routine in the host toolchain.  On Mac OS X,
@@ -652,10 +661,13 @@ int main(int argc, char **argv, char **environ) {
    * unnecessary, because the host toolchain doesn't have a "_start"
    * routine.
    */
+  nacl_entry_func_t entry_func =
 #if defined(__APPLE__)
-  _start(data);
+    _start;
 #else
-  _user_start(data);
+    _user_start;
 #endif
-  return 1;
+
+  return nacl_irt_nonsfi_entry(argc, argv, environ, entry_func);
 }
+#endif

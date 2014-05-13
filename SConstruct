@@ -28,11 +28,6 @@ import test_lib
 
 import pynacl.platform
 
-# NOTE: Underlay for  src/third_party_mod/gtest
-# TODO: try to eliminate this hack
-Dir('src/third_party_mod/gtest').addRepository(
-    Dir('#/../testing/gtest'))
-
 # turning garbage collection off reduces startup time by 10%
 import gc
 gc.disable()
@@ -131,6 +126,9 @@ ACCEPTABLE_ARGUMENTS = set([
     'force_sel_ldr',
     # force irt image used by tests
     'force_irt',
+    # generate_ninja=FILE enables a Ninja backend for SCons.  This writes a
+    # .ninja build file to FILE describing all of SCons' build targets.
+    'generate_ninja',
     # Path to a JSON file for machine-readable output.
     'json_build_results_output_file',
     # Replacement memcheck command for overriding the DEPS-in memcheck
@@ -148,8 +146,6 @@ ACCEPTABLE_ARGUMENTS = set([
     # colon-separated list of pnacl bcld flags, e.g. "-lfoo:-Wl,-u,bar".
     # Not using nacl_linkflags since that gets clobbered in some tests.
     'pnacl_bcldflags',
-    'naclsdk_mode',
-    'pnaclsdk_mode',
     'platform',
     # Run tests under this tool (e.g. valgrind, tsan, strace, etc).
     # If the tool has options, pass them after comma: 'tool,--opt1,--opt2'.
@@ -186,12 +182,12 @@ ACCEPTABLE_ARGUMENTS = set([
     'bindir',
     # Where a Breakpad build output directory is for optional Breakpad testing.
     'breakpad_tools_dir',
-    # Allows overriding the toolchain to use. The default toolchain will be
-    # a combination of the other arguments. Example toolchains:
-    #  NaCl (newlib): nacl_PLATFORM_newlib
-    #  NaCl (glibc):  nacl_PLATFORM_glibc
-    #  pnacl:         pnacl_PLATFORM
-    'toolchain',
+    # Allows overriding of the nacl newlib toolchain directory.
+    'nacl_newlib_dir',
+    # Allows override of the nacl glibc toolchain directory.
+    'nacl_glibc_dir',
+    # Allows override of the pnacl newlib toolchain directory.
+    'pnacl_newlib_dir',
     # Allows overriding the version number in the toolchain's
     # FEATURE_VERSION file.  This is used for PNaCl ABI compatibility
     # testing.
@@ -331,6 +327,11 @@ def SetUpArgumentBits(env):
   BitFromArgument(env, 'pnacl_unsandboxed', default=False,
     desc='Translate pexe to an unsandboxed, host executable')
 
+  BitFromArgument(env, 'nonsfi_nacl', default=False,
+    desc='Use Non-SFI Mode instead of the original SFI Mode.  This uses '
+      'nonsfi_loader instead of sel_ldr, and it tells the PNaCl toolchain '
+      'to translate pexes to Non-SFI nexes.')
+
   BitFromArgument(env, 'browser_headless', default=False,
     desc='Where possible, set up a dummy display to run the browser on '
       'when running browser tests.  On Linux, this runs the browser through '
@@ -350,6 +351,10 @@ def SetUpArgumentBits(env):
     desc='Prevents tests from running.  This lets SCons build the files needed '
       'to run the specified test(s) without actually running them.  This '
       'argument is a counterpart to built_elsewhere.')
+
+  BitFromArgument(env, 'no_gdb_tests', default=False,
+    desc='Prevents GDB tests from running.  If GDB is not available, you can '
+      'test everything else by specifying this flag.')
 
   BitFromArgument(env, 'validator_ragel', default=True,
     desc='Use the R-DFA validator instead of the original validators.')
@@ -479,6 +484,12 @@ pre_base_env = Environment(
 )
 
 
+if 'generate_ninja' in ARGUMENTS:
+  import pynacl.scons_to_ninja
+  pynacl.scons_to_ninja.GenerateNinjaFile(
+      pre_base_env, dest_file=ARGUMENTS['generate_ninja'])
+
+
 breakpad_tools_dir = ARGUMENTS.get('breakpad_tools_dir')
 if breakpad_tools_dir is not None:
   pre_base_env['BREAKPAD_TOOLS_DIR'] = pre_base_env.Dir(
@@ -584,8 +595,13 @@ def EnsureRequiredBuildWarnings(env):
 pre_base_env.AddMethod(EnsureRequiredBuildWarnings)
 
 # Expose MakeTempDir and MakeTempFile to scons scripts
+def MakeEmptyFile(env, **kwargs):
+  fd, path = test_lib.MakeTempFile(env, **kwargs)
+  os.close(fd)
+  return path
+
 pre_base_env.AddMethod(test_lib.MakeTempDir)
-pre_base_env.AddMethod(test_lib.MakeTempFile)
+pre_base_env.AddMethod(MakeEmptyFile)
 
 # Method to add target suffix to name.
 def NaClTargetArchSuffix(env, name):
@@ -1162,18 +1178,21 @@ def GetPlatformBuildTargetDir(env):
 pre_base_env.AddMethod(GetPlatformBuildTargetDir)
 
 
-def GetToolchainName(env, target_arch=None, is_pnacl=None, lib_name=None):
-  toolchain = ARGUMENTS.get('toolchain', None)
-  if toolchain is None:
+def GetToolchainDir(env, platform_build_dir=None, toolchain_name=None,
+                    target_arch=None, is_pnacl=None, lib_name=None):
+  if platform_build_dir is None:
+    platform_build_dir = env.GetPlatformBuildTargetDir()
+
+  if toolchain_name is None:
+    # Fill in default arguments based on environment.
     if is_pnacl is None:
       is_pnacl = env.Bit('bitcode')
-    if lib_name is None:
-      if is_pnacl or not env.Bit('nacl_glibc'):
-        lib_name = 'newlib'
-      else:
-        lib_name = 'glibc'
+      if lib_name is None:
+        if is_pnacl or not env.Bit('nacl_glibc'):
+          lib_name = 'newlib'
+        else:
+          lib_name = 'glibc'
 
-    build_arch = pynacl.platform.GetArch(GetBuildPlatform())
     if target_arch is None:
       target_arch = pynacl.platform.GetArch(GetTargetPlatform())
 
@@ -1182,24 +1201,27 @@ def GetToolchainName(env, target_arch=None, is_pnacl=None, lib_name=None):
     else:
       target_env = 'nacl_%s' % target_arch
 
-    toolchain = '%s_%s' % (target_env, lib_name)
+    # See if we have a custom toolchain directory set.
+    if is_pnacl:
+      toolchain_arg = 'pnacl_%s_dir' % lib_name
+    else:
+      toolchain_arg = 'nacl_%s_dir' % lib_name
 
-  return toolchain
+    custom_toolchain_dir = ARGUMENTS.get(toolchain_arg, None)
+    if custom_toolchain_dir:
+      return env.SConstructAbsPath(custom_toolchain_dir)
 
-pre_base_env.AddMethod(GetToolchainName)
+    # Get the standard toolchain name since no directory custom was found.
+    if is_pnacl:
+      target_env = 'pnacl'
+    else:
+      target_env = 'nacl_%s' % target_arch
+    toolchain_name = '%s_%s' % (target_env, lib_name)
 
-
-def GetToolchainDir(env, platform_build_dir=None, toolchain_name=None):
-  if platform_build_dir is None:
-    platform_build_dir = env.GetPlatformBuildTargetDir()
-  if toolchain_name is None:
-    toolchain_name = env.GetToolchainName()
-
-  toolchain_sub_dir = os.path.join(
-      'toolchain',
-      platform_build_dir,
-      toolchain_name
-  )
+  # Get the absolute path for the platform build directory and toolchain.
+  toolchain_sub_dir = os.path.join('toolchain',
+                                   platform_build_dir,
+                                   toolchain_name)
   return env.SConstructAbsPath(toolchain_sub_dir)
 
 pre_base_env.AddMethod(GetToolchainDir)
@@ -1274,6 +1296,15 @@ def AddBootstrap(env, executable, args):
     return [bootstrap, executable] + bootstrap_args + args
 
 pre_base_env.AddMethod(AddBootstrap)
+
+
+def GetNonSfiLoader(env):
+  if 'TRUSTED_ENV' not in env:
+    return None
+  return env['TRUSTED_ENV'].File(
+      '${STAGING_DIR}/${PROGPREFIX}nonsfi_loader${PROGSUFFIX}')
+
+pre_base_env.AddMethod(GetNonSfiLoader)
 
 
 def GetIrtNexe(env, chrome_irt=False):
@@ -1596,7 +1627,10 @@ def CommandSelLdrTestNacl(env, name, nexe,
     return env.CommandTest(name, command, size, **extra)
 
   if loader is None:
-    loader = env.GetSelLdr()
+    if env.Bit('nonsfi_nacl'):
+      loader = env.GetNonSfiLoader()
+    else:
+      loader = env.GetSelLdr()
     if loader is None:
       print 'WARNING: no sel_ldr found. Skipping test %s' % name
       return []
@@ -1656,7 +1690,12 @@ def CommandSelLdrTestNacl(env, name, nexe,
   else:
     loader_cmd = env.AddBootstrap(loader, [])
 
-  command = loader_cmd + sel_ldr_flags + ['--'] + command
+  if env.Bit('nonsfi_nacl'):
+    # nonsfi_loader does not accept the same flags as sel_ldr yet, so
+    # we ignore sel_ldr_flags here.
+    command = [loader] + command
+  else:
+    command = loader_cmd + sel_ldr_flags + ['--'] + command
 
   if env.Bit('host_linux'):
     extra['using_nacl_signal_handler'] = True
@@ -2017,7 +2056,8 @@ def CustomCommandPrinter(cmd, targets, source, env):
     # The SCons default (copied from print_cmd_line in Action.py)
     sys.stdout.write(cmd + u'\n')
 
-pre_base_env.Append(PRINT_CMD_LINE_FUNC=CustomCommandPrinter)
+if 'generate_ninja' not in ARGUMENTS:
+  pre_base_env.Append(PRINT_CMD_LINE_FUNC=CustomCommandPrinter)
 
 
 def GetAbsDirArg(env, argument, target):
@@ -2109,6 +2149,8 @@ def MakeBaseTrustedEnv(platform=None):
       # KEEP THIS SORTED PLEASE
       'build/package_version/build.scons',
       'pynacl/build.scons',
+      'src/nonsfi/irt/build.scons',
+      'src/nonsfi/loader/build.scons',
       'src/shared/gio/build.scons',
       'src/shared/imc/build.scons',
       'src/shared/ldr/build.scons',
@@ -2233,17 +2275,6 @@ Targets to build untrusted code destined for the SDK:
 
 Options:
 --------
-
-naclsdk_mode=<mode>   where <mode>:
-
-                    'local': use locally installed sdk kit
-                    'download': use the download copy (default)
-                    'custom:<path>': use kit at <path>
-                    'manual': use settings from env vars NACL_SDK_xxx
-
-pnaclsdk_mode=<mode> where <mode:
-                    'default': use the default (typically the downloaded copy)
-                    'custom:<path>': use kit from <path>
 
 --prebuilt          Do not build things, just do install steps
 
@@ -2579,14 +2610,22 @@ def SetUpAndroidEnv(env):
   if not ndk or not sdk:
     print 'Please define ANDROID_NDK_ROOT and ANDROID_SDK_ROOT'
     sys.exit(-1)
-  tc = '%s/toolchains/%s-%s/prebuilt/linux-x86_64/bin/' \
-      % (ndk, ndk_tctarget, ndk_version)
+  ndk_platform_path_map = {
+      pynacl.platform.OS_WIN : 'win',
+      pynacl.platform.OS_MAC: 'darwin',
+      pynacl.platform.OS_LINUX : 'linux'
+      }
+  ndk_platform_path = ndk_platform_path_map[pynacl.platform.GetOS()]
+  tc = '%s/toolchains/%s-%s/prebuilt/%s-x86_64/bin/' % (
+      ndk, ndk_tctarget, ndk_version, ndk_platform_path)
   tc_prefix = '%s/%s-' % (tc, ndk_target)
   platform_prefix = '%s/platforms/android-14/arch-%s' % (ndk, arch)
   stl_path =  '%s/sources/cxx-stl/gnu-libstdc++/%s' % (ndk, ndk_version)
   env.Replace(CC=tc_prefix + 'gcc',
               CXX=tc_prefix + 'g++',
               LD=tc_prefix + 'g++',
+              AR=tc_prefix + 'ar',
+              RANLIB=tc_prefix + 'ranlib',
               EMULATOR=sdk + '/tools/emulator',
               LIBPATH=['${LIB_DIR}',
                        '%s/libs/%s' % (stl_path, libarch),
@@ -3026,6 +3065,7 @@ target_variant_map = [
     ('use_sandboxed_translator', 'sbtc'),
     ('nacl_glibc', 'glibc'),
     ('pnacl_generate_pexe', 'pexe'),
+    ('nonsfi_nacl', 'nonsfi'),
     ]
 for variant_bit, variant_suffix in target_variant_map:
   if nacl_env.Bit(variant_bit):
@@ -3155,7 +3195,6 @@ irt_variant_tests = [
     'tests/longjmp/nacl.scons',
     'tests/loop/nacl.scons',
     'tests/mandel/nacl.scons',
-    'tests/manifest_file/nacl.scons',
     'tests/math/nacl.scons',
     'tests/memcheck_test/nacl.scons',
     'tests/mmap/nacl.scons',

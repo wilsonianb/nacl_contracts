@@ -11,11 +11,23 @@
 
 
 /*
+ * __nacl_read_tp() is only needed on targets that don't have a
+ * fast-path instruction sequence for reading the thread pointer (such
+ * as %gs:0 on x86-32).  Don't define it if we don't need it, to help
+ * ensure that the fast path gets used.
+ */
+#if defined(__x86_64__) || defined(__native_client_nonsfi__)
+# define NEED_NACL_READ_TP
+#endif
+
+#if defined(NEED_NACL_READ_TP)
+
+/*
  * TODO(mseaborn): Use the definition in nacl_config.h instead.
  * nacl_config.h is not #includable here because NACL_BUILD_ARCH
  * etc. are not defined at this point in the PNaCl toolchain build.
  */
-#define NACL_SYSCALL_ADDR(syscall_number) (0x10000 + (syscall_number) * 32)
+# define NACL_SYSCALL_ADDR(syscall_number) (0x10000 + (syscall_number) * 32)
 
 /*
  * If we are not running under the IRT, we fall back to using the
@@ -25,6 +37,29 @@
 static void *(*g_nacl_read_tp_func)(void) =
     (void *(*)(void)) NACL_SYSCALL_ADDR(NACL_sys_tls_get);
 
+# if defined(__arm__) && defined(__native_client_nonsfi__)
+/*
+ * The ARM ABI's __aeabi_read_tp() function must preserve all registers except
+ * r0, but the IRT's tls_get() is just a normal function that is not
+ * guaranteed to do this.  This means we need an assembly wrapper to save and
+ * restore non-callee-saved registers.
+ */
+__asm__(".pushsection .text, \"ax\", %progbits\n"
+        ".global __aeabi_read_tp\n"
+        ".type __aeabi_read_tp, %function\n"
+        ".arm\n"
+        "__aeabi_read_tp:\n"
+        "push {r1-r3, lr}\n"
+        "vpush {d0-d7}\n"
+        "movw r1, :lower16:(g_nacl_read_tp_func - (1f + 8))\n"
+        "movt r1, :upper16:(g_nacl_read_tp_func - (1f + 8))\n"
+        "1:\n"
+        "ldr r0, [pc, r1]\n"
+        "blx r0\n"
+        "vpop {d0-d7}\n"
+        "pop {r1-r3, pc}\n"
+        ".popsection\n");
+# else
 /*
  * __nacl_read_tp is defined as a weak symbol because if a pre-translated
  * object file (which may contain calls to __nacl_read_tp) is linked with
@@ -36,8 +71,12 @@ __attribute__((weak))
 void *__nacl_read_tp(void) {
   return g_nacl_read_tp_func();
 }
+# endif
+
+#endif
 
 void __pnacl_init_irt(uint32_t *startup_info) {
+#if defined(NEED_NACL_READ_TP)
   Elf32_auxv_t *av = nacl_startup_auxv(startup_info);
 
   for (; av->a_type != AT_NULL; ++av) {
@@ -51,4 +90,5 @@ void __pnacl_init_irt(uint32_t *startup_info) {
       return;
     }
   }
+#endif
 }

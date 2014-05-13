@@ -57,7 +57,7 @@ export PNACL_TOOLCHAIN_DIR=${TOOLCHAIN_BASE_DIR}/pnacl_newlib
 export PNACL_TOOLCHAIN_LABEL=pnacl_linux_x86
 # This picks the TC which we just built, even if scons doesn't know
 # how to find a 64-bit host toolchain.
-readonly SCONS_PICK_TC="pnaclsdk_mode=custom:toolchain/${PNACL_TOOLCHAIN_DIR}"
+readonly SCONS_PICK_TC="pnacl_newlib_dir=toolchain/${PNACL_TOOLCHAIN_DIR}"
 
 # download-old-tc -
 # Download the archived frontend toolchain, if we haven't already
@@ -83,7 +83,7 @@ download-old-tc() {
 clobber() {
   echo @@@BUILD_STEP clobber@@@
   rm -rf scons-out
-  # Don't clobber toolchain/pnacl_translator; these bots currently don't build
+  # Don't clobber pnacl_translator; these bots currently don't build
   # it, but they use the DEPSed-in version.
   rm -rf toolchain/linux_x86/pnacl_newlib* \
       toolchain/mac_x86/pnacl_newlib* \
@@ -104,7 +104,7 @@ ignore-error() {
 readonly SCONS_COMMON="./scons --verbose bitcode=1 -j${PNACL_CONCURRENCY}"
 readonly SCONS_COMMON_SLOW="./scons --verbose bitcode=1 -j2"
 
-build-sbtc-prerequisites() {
+build-run-prerequisites() {
   local platform=$1
   ${SCONS_COMMON} ${SCONS_PICK_TC} platform=${platform} \
     sel_ldr sel_universal irt_core
@@ -113,10 +113,6 @@ build-sbtc-prerequisites() {
 
 scons-tests-translator() {
   local platform=$1
-
-  echo "@@@BUILD_STEP scons-sb-trans [${platform}] [prereq]@@@"
-  build-sbtc-prerequisites ${platform}
-
   local flags="--mode=opt-host,nacl use_sandboxed_translator=1 \
                platform=${platform} -k"
   local targets="small_tests medium_tests large_tests"
@@ -230,8 +226,8 @@ archived-frontend-test() {
   mv toolchain/${PNACL_TOOLCHAIN_DIR} \
     toolchain/${TOOLCHAIN_BASE_DIR}/current_tc/${PNACL_TOOLCHAIN_LABEL}
 
-  # Link the old frontend into place. If we just use pnaclsdk_mode to select a
-  # different toolchain, SCons will attempt to rebuild the IRT.
+  # Link the old frontend into place. If we select a different toolchain,
+  # SCons will attempt to rebuild the IRT.
   ln -s archived_tc/${PNACL_TOOLCHAIN_LABEL} toolchain/${PNACL_TOOLCHAIN_DIR}
 
   # Build the pexes with the old frontend.
@@ -289,28 +285,29 @@ tc-test-bot() {
     archset=
   fi
 
-  echo "@@@BUILD_STEP show-config@@@"
-  ${PNACL_BUILD} show-config
+  # Build the un-sandboxed toolchain. The build script outputs its own buildbot
+  # annotations.
+  # Build and use the 64-bit llvm build, to get 64-bit versions of the build
+  # tools such as fpcmp (used for llvm test suite). For some reason it matters
+  # that they match the build machine. TODO(dschuff): Is this still necessary?
+  ${TOOLCHAIN_BUILD} --verbose --sync --clobber --build-64bit-host \
+    --testsuite-sync \
+    --install toolchain/linux_x86/pnacl_newlib
 
-  ${PNACL_BUILD} clean
-  echo "@@@BUILD_STEP Sync repos for build.sh@@@"
-  python ${TOOLCHAIN_BUILD} --legacy-repo-sync
-  ${PNACL_BUILD} newlib-nacl-headers
+  # Linking the tests require additional sdk libraries like libnacl.
+  # Do this once and for all early instead of attempting to do it within
+  # each test step and having some late test steps rely on early test
+  # steps building the prerequisites -- sometimes the early test steps
+  # get skipped.
+  echo "@@@BUILD_STEP install sdk libraries @@@"
+  ${PNACL_BUILD} sdk
+  for arch in ${archset}; do
+    # Similarly, build the run prerequisites (sel_ldr and the irt) early.
+    echo "@@@BUILD_STEP build run prerequisites [${arch}]@@@"
+    build-run-prerequisites ${arch}
+  done
 
-  # Build the un-sandboxed toolchain
-  echo "@@@BUILD_STEP compile_toolchain@@@"
-
-  # Assume Linux, where the x86-32 host tools are default.
-  HOST_ARCH=x86_32 ${PNACL_BUILD} build-all
-  # However, make 64-bit versions of the build tools such as fpcmp
-  # (used for llvm test suite and for some reason it matters that they
-  # match the build machine)
-  local build_arch=x86_64
-  ${PNACL_BUILD} llvm-configure
-  PNACL_MAKE_OPTS=BUILD_DIRS_ONLY=1 ${PNACL_BUILD} llvm-make
-
-  # run the torture tests. the "trybot" phases take care of prerequisites
-  # for both test sets
+  # Run the torture tests.
   for arch in ${archset}; do
     if [[ "${arch}" == "x86-32" ]]; then
       # Torture tests on x86-32 are covered by tc-tests-all in
@@ -322,11 +319,6 @@ tc-test-bot() {
       --concurrency=${PNACL_CONCURRENCY} || handle-error
   done
 
-  # llvm-test-suite below requires the SDK libraries to be installed.
-  # torture_tests above do this as a side effect, but we do it
-  # explicitly here for cases in which torture_tests are not run.
-  echo "@@@BUILD_STEP install sdk libraries @@@"
-  ${PNACL_BUILD} sdk
 
   local optset
   optset[1]="--opt O3f --opt O2b"
@@ -341,12 +333,8 @@ tc-test-bot() {
     fi
     for opt in "${optset[@]}"; do
       echo "@@@BUILD_STEP llvm-test-suite ${arch} ${opt} @@@"
-      python ${LLVM_TEST} --testsuite-prereq --arch ${arch}
       python ${LLVM_TEST} --testsuite-clean
-      # TODO(jvoung): use default instead of specifying --llvm-buildpath
-      # once this builder uses the toolchain_build infrastructure.
       python ${LLVM_TEST} \
-        --llvm-buildpath="$(pwd)/pnacl/build/llvm_${build_arch}" \
         --testsuite-configure --testsuite-run --testsuite-report \
         --arch ${arch} ${opt} -v -c || handle-error
     done

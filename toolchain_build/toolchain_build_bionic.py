@@ -18,9 +18,18 @@ import StringIO
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+import pynacl.gsd_storage
 import pynacl.hashing_tools
 import pynacl.platform
 import pynacl.repo_tools
+
+BUILD_SCRIPT = os.path.abspath(__file__)
+TOOLCHAIN_BUILD = os.path.dirname(BUILD_SCRIPT)
+NATIVE_CLIENT = os.path.dirname(TOOLCHAIN_BUILD)
+PKG_VERSION = os.path.join(NATIVE_CLIENT, 'build', 'package_version')
+sys.path.append(PKG_VERSION)
+import archive_info
+import package_info
 
 import toolchain_build
 import toolchain_main
@@ -29,22 +38,14 @@ from file_update import Mkdir, Rmdir, Symlink
 from file_update import NeedsUpdate, UpdateFromTo, UpdateText
 
 
-BIONIC_VERSION = 'dc6a3b05fb2b0894088905031f8a5a92e975d023'
+BIONIC_VERSION = 'fb8703c7e8b5949aee9f55bf595ba2f848709c44'
 ARCHES = ['arm']
-
-BUILD_SCRIPT = os.path.abspath(__file__)
-TOOLCHAIN_BUILD = os.path.dirname(BUILD_SCRIPT)
 TOOLCHAIN_BUILD_SRC = os.path.join(TOOLCHAIN_BUILD, 'src')
 TOOLCHAIN_BUILD_OUT = os.path.join(TOOLCHAIN_BUILD, 'out')
 
 BIONIC_SRC = os.path.join(TOOLCHAIN_BUILD_SRC, 'bionic')
-NATIVE_CLIENT = os.path.dirname(TOOLCHAIN_BUILD)
 TOOLCHAIN = os.path.join(NATIVE_CLIENT, 'toolchain')
 
-PROJECTS = [
-  'bionic_%s_work',
-  'gcc_%s_work',
-]
 
 def GetToolchainPath(target_arch, libc, *extra_paths):
   os_name = pynacl.platform.GetOS()
@@ -72,15 +73,18 @@ def ReplaceText(text, maplist):
 def ReplaceArch(text, arch, subarch=None):
   NACL_ARCHES = {
     'arm': 'arm',
-    'x86': 'x86_64'
+    'x86': 'x86_64',
+    'pnacl': 'pnacl'
   }
   GCC_ARCHES = {
     'arm': 'arm',
-    'x86': 'i686'
+    'x86': 'i686',
+    'pnacl': 'pnacl'
   }
   CPU_ARCHES = {
     'arm': 'arm',
-    'x86': 'amd64'
+    'x86': 'amd64',
+    'pnacl': 'pnacl'
   }
   VERSION_MAP = {
     'arm': '4.8.2',
@@ -97,17 +101,28 @@ def ReplaceArch(text, arch, subarch=None):
   return ReplaceText(text, [REPLACE_MAP])
 
 
-def Clobber():
-  Rmdir(os.path.join(TOOLCHAIN_BUILD, 'cache'))
+def Clobber(fast=False):
+  if not fast:
+    Rmdir(os.path.join(TOOLCHAIN_BUILD, 'cache'))
+    Rmdir(os.path.join(TOOLCHAIN_BUILD_OUT, 'gcc_arm_work'))
+
+  BUILD_DIRS = [
+    'linux_%s_bionic',
+    'bionic_%s_work',
+  ]
+
   for arch in ARCHES:
-    Rmdir(GetToolchainBuildPath(arch, 'bionic'))
-    for workdir in PROJECTS:
+    Rmdir(GetToolchainPath(arch, 'bionic'))
+    for workdir in BUILD_DIRS:
       Rmdir(os.path.join(TOOLCHAIN_BUILD_OUT, workdir % arch))
 
 
-def FetchAndBuild_gcc_libs(extra_args):
-  tc_args = extra_args + ['-y', '--no-use-remote-cache', 'gcc_libs_arm']
-  # TODO(dyen): Fill in PACKAGE_TARGETS for bionic.
+def FetchAndBuild_gcc_libs():
+  tc_args = ['-y', '--no-use-cached-results', '--no-use-remote-cache',
+             'gcc_libs_arm']
+  # Call toolchain_build to build the gcc libs. We do not need to fill in
+  # any package targets since we are using toolchain_build as an
+  # intermediate step.
   toolchain_main.PackageBuilder(toolchain_build.PACKAGES, {}, tc_args).Main()
 
 
@@ -286,7 +301,7 @@ def MakeGCCProject(arch, project, workpath, targets=[]):
   print 'Done ' + proj
 
 
-def ConfigureAndBuild_libgcc(config=False):
+def ConfigureAndBuild_libgcc(skip_build=False):
   arch = 'arm'
   project = 'libgcc'
   tcpath = GetBionicBuildPath(arch)
@@ -294,8 +309,10 @@ def ConfigureAndBuild_libgcc(config=False):
   # Prep work path
   workpath = os.path.join(TOOLCHAIN_BUILD_OUT, 'gcc_$GCC_bionic_work')
   workpath = ReplaceArch(workpath, arch)
-  Mkdir(workpath)
-  Symlink('../gcc_libs_arm_work/gcc' , os.path.join(workpath, 'gcc'))
+
+  if not skip_build:
+    Mkdir(workpath)
+    Symlink('../gcc_libs_arm_work/gcc' , os.path.join(workpath, 'gcc'))
 
   # Prep install path
   inspath = os.path.join(TOOLCHAIN_BUILD_OUT, 'gcc_$GCC_bionic_install')
@@ -314,15 +331,17 @@ def ConfigureAndBuild_libgcc(config=False):
     '--prefix=' + inspath,
     'CFLAGS=-I../../../gcc_lib_arm_work'
   ]
-  ConfigureGCCProject(arch, project, cfg, dstpath, inspath)
-  MakeGCCProject(arch, project, dstpath, ['libgcc.a'])
+
+  if not skip_build:
+    ConfigureGCCProject(arch, project, cfg, dstpath, inspath)
+    MakeGCCProject(arch, project, dstpath, ['libgcc.a'])
 
   # Copy temp version of libgcc.a for linking libc.so
   UpdateFromTo(os.path.join(dstpath, 'libgcc.a'),
                os.path.join(tcpath, 'arm-nacl', 'lib', 'libgcc.a'))
 
 
-def BuildAndInstall_libgcc_s():
+def BuildAndInstall_libgcc_s(skip_build=False):
   arch = 'arm'
   project = 'libgcc'
   tcpath = GetBionicBuildPath(arch)
@@ -339,8 +358,9 @@ def BuildAndInstall_libgcc_s():
   inspath = os.path.join(TOOLCHAIN_BUILD_OUT, 'gcc_$GCC_bionic_install')
   inspath = ReplaceArch(inspath, arch)
 
-  MakeGCCProject(arch, project, dstpath)
-  MakeGCCProject(arch, project, dstpath, ['install'])
+  if not skip_build:
+    MakeGCCProject(arch, project, dstpath)
+    MakeGCCProject(arch, project, dstpath, ['install'])
 
   UpdateFromTo(os.path.join(inspath, 'lib', 'gcc'),
                os.path.join(tcpath, 'lib', 'gcc'),
@@ -384,8 +404,20 @@ def ConfigureAndBuild_libstdcpp():
   MakeGCCProject(arch, project, dstpath)
   MakeGCCProject(arch, project, dstpath, ['install'])
 
-  UpdateFromTo(os.path.join(inspath, 'lib'),
-               os.path.join(tcpath, 'arm-nacl', 'lib'))
+  filelist = [
+    'libstdc++.a',
+    'libstdc++.la',
+    'libstdc++.so',
+    'libstdc++.so.6',
+    'libstdc++.so.6.0.18',
+    'libstdc++.so.6.0.18-gdb.py',
+    'libsupc++.a',
+    'libsupc++.la'
+  ]
+  for filename in filelist:
+    UpdateFromTo(os.path.join(inspath, 'lib', filename),
+                os.path.join(tcpath, 'arm-nacl', 'lib', filename))
+
   UpdateFromTo(os.path.join(inspath, 'include'),
                os.path.join(tcpath, 'arm-nacl', 'include'))
 
@@ -418,6 +450,7 @@ def CreateProject(arch, project, clobber=False):
 # GNU Makefile based on shared rules provided by the Native Client SDK.
 # See README.Makefiles for more details.
 
+NATIVE_CLIENT_PATH?=$(nacl_path)
 TOOLCHAIN_PATH?=$(tc_path)
 TOOLCHAIN_PREFIX:=$(TOOLCHAIN_PATH)/bin/$GCC-nacl-
 
@@ -443,7 +476,8 @@ include $(src_path)/Makefile
     '$(dst_path)': paths['work'],
     '$(ins_path)': paths['ins'],
     '$(tc_path)':  GetBionicBuildPath(arch),
-    '$(build_tc_path)': TOOLCHAIN_BUILD
+    '$(build_tc_path)': TOOLCHAIN_BUILD,
+    '$(nacl_path)': NATIVE_CLIENT,
   }
   text = ReplaceText(MAKEFILE_TEMPLATE, [remap])
   text = ReplaceArch(text, arch)
@@ -458,7 +492,7 @@ include $(src_path)/Makefile
 
 
 def ConfigureBionicProjects(clobber=False):
-  PROJECTS = ['libc', 'libm', 'linker', 'tests']
+  PROJECTS = ['libc', 'libm', 'linker', 'tests', 'newlinker', 'newtests']
   arch = 'arm'
   for project in PROJECTS:
     print 'Configure %s for %s.' % (project, arch)
@@ -485,49 +519,63 @@ def MakeBionicProject(project, targets=[], clobber=False):
   print 'Done with %s for %s.\n' % (project, arch)
 
 
-def ArchiveAndUpload(version, zipname, zippath):
-  if 'BUILDBOT_BUILDERNAME' in os.environ:
-    GSUTIL = '../buildbot/gsutil.sh'
-  else:
-    GSUTIL = 'gsutil'
-  GSUTIL_ARGS = [GSUTIL, 'cp', '-a', 'public-read']
-  GSUTIL_PATH = 'gs://nativeclient-archive2/toolchain'
+def ArchiveAndUpload(version, zipname, zippath, packages_file):
+  sys.stdout.flush()
+  print >>sys.stderr, '@@@BUILD_STEP archive_and_upload@@@'
 
-  urldir = os.path.join(GSUTIL_PATH, version)
-  zipurl = os.path.join(urldir, zipname)
+  bucket_path = 'nativeclient-archive2/toolchain/%s' % version
+  gsd_store = pynacl.gsd_storage.GSDStorage(bucket_path, [bucket_path])
+
   zipname = os.path.join(TOOLCHAIN_BUILD_OUT, zipname)
-
   try:
     os.remove(zipname)
   except:
     pass
 
-  sys.stdout.flush()
-  print >>sys.stderr, '@@@STEP_LINK@download@%s@@@' % urldir
-
+  # Archive the zippath to the zipname.
   if process.Run(['tar', '-czf', zipname, zippath],
                  cwd=TOOLCHAIN_BUILD_OUT,
                  outfile=sys.stdout):
       raise RuntimeError('Failed to zip %s from %s.\n' % (zipname, zippath))
 
+  # Create Zip Hash file using the hash of the zip file.
   hashzipname = zipname + '.sha1hash'
-  hashzipurl = zipurl + '.sha1hash'
   hashval = pynacl.hashing_tools.HashFileContents(zipname)
-
   with open(hashzipname, 'w') as f:
     f.write(hashval)
 
-  if process.Run(GSUTIL_ARGS + [zipname, zipurl],
-                 cwd=TOOLCHAIN_BUILD,
-                 outfile=sys.stdout):
-    err = 'Failed to upload zip %s to %s.\n' % (zipname, zipurl)
-    raise RuntimeError(err)
+  # Upload the Zip file.
+  zipurl = gsd_store.PutFile(zipname, os.path.basename(zipname))
+  sys.stdout.flush()
+  print >>sys.stderr, ('@@@STEP_LINK@download (%s)@%s@@@' %
+                       (os.path.basename(zipname), zipurl))
 
-  if process.Run(GSUTIL_ARGS + [hashzipname, hashzipurl],
-                 cwd=TOOLCHAIN_BUILD,
-                 outfile=sys.stdout):
-    err = 'Failed to upload hash %s to %s.\n' % (hashzipname, hashzipurl)
-    raise RuntimeError(err)
+  # Upload the Zip Hash file.
+  hashurl = gsd_store.PutFile(hashzipname, os.path.basename(hashzipname))
+  sys.stdout.flush()
+  print >>sys.stderr, ('@@@STEP_LINK@download (%s)@%s@@@' %
+                       (os.path.basename(hashzipname), hashurl))
+
+  # Create a package info file for the nacl_arm_bionic package.
+  archive_desc = archive_info.ArchiveInfo(name=os.path.basename(zipname),
+                                          archive_hash=hashval,
+                                          tar_src_dir='linux_arm_bionic',
+                                          url=zipurl)
+  package_desc = package_info.PackageInfo()
+  package_desc.AppendArchive(archive_desc)
+
+  os_name = pynacl.platform.GetOS()
+  arch_name = pynacl.platform.GetArch()
+  package_info_file = os.path.join(TOOLCHAIN_BUILD_OUT,
+                                   'packages',
+                                   '%s_%s' % (os_name, arch_name),
+                                   'nacl_arm_bionic.json')
+  package_desc.SavePackageFile(package_info_file)
+
+  # If packages_file is specified, write out our packages file of 1 package.
+  if packages_file:
+    with open(packages_file, 'wt') as f:
+      f.write(package_info_file)
 
 
 def main(argv):
@@ -536,10 +584,17 @@ def main(argv):
       '-v', '--verbose', dest='verbose',
       default=False, action='store_true',
       help='Produce more output.')
+
   parser.add_argument(
       '-c', '--clobber', dest='clobber',
       default=False, action='store_true',
       help='Clobber working directories before building.')
+
+  parser.add_argument(
+      '-f', '--fast-clobber', dest='fast_clobber',
+      default=False, action='store_true',
+      help='Clobber bionic working directories before building.')
+
   parser.add_argument(
       '-s', '--sync', dest='sync',
       default=False, action='store_true',
@@ -551,9 +606,19 @@ def main(argv):
       help='Running on the buildbot.')
 
   parser.add_argument(
+      '-l', '--llvm', dest='llvm',
+      default=False, action='store_true',
+      help='Enable building via llvm.')
+
+  parser.add_argument(
       '-u', '--upload', dest='upload',
       default=False, action='store_true',
       help='Upload build artifacts.')
+
+  parser.add_argument(
+        '--packages-file', dest='packages_file',
+        default=None,
+        help='Output packages file describing list of package files built.')
 
   parser.add_argument(
       '--skip-gcc', dest='skip_gcc',
@@ -565,12 +630,16 @@ def main(argv):
     print 'The following arguments are specific to toolchain_build_bionic.py:'
     parser.print_help()
     print 'The rest of the arguments are generic, in toolchain_main.py'
+    return 1
+
+  if options.llvm:
+    ARCHES.append('pnacl')
 
   if options.buildbot or options.upload:
     version = os.environ['BUILDBOT_REVISION']
 
-  if options.clobber:
-    Clobber()
+  if options.clobber or options.fast_clobber:
+    Clobber(fast=options.fast_clobber)
 
   if options.sync or options.buildbot:
     FetchBionicSources()
@@ -586,16 +655,16 @@ def main(argv):
 
   if not options.skip_gcc:
     # Build newlib gcc_libs for use by bionic
-    FetchAndBuild_gcc_libs(leftover_args)
+    FetchAndBuild_gcc_libs()
 
   # Configure and build libgcc.a
-  ConfigureAndBuild_libgcc()
+  ConfigureAndBuild_libgcc(skip_build=options.skip_gcc)
 
   # With libgcc.a, we can now build libc.so
   MakeBionicProject('libc')
 
   # With libc.so, we can build libgcc_s.so
-  BuildAndInstall_libgcc_s()
+  BuildAndInstall_libgcc_s(skip_build=options.skip_gcc)
 
   # With libc and libgcc_s, we can now build libm
   MakeBionicProject('libm')
@@ -604,18 +673,31 @@ def main(argv):
   ConfigureAndBuild_libstdcpp()
 
   # Now we can build the linker
-  MakeBionicProject('linker')
+  #MakeBionicProject('linker')
+  MakeBionicProject('newlinker')
 
   # Now we have a full toolchain, so test it
-  MakeBionicProject('tests')
+  #MakeBionicProject('tests')
+  MakeBionicProject('newtests')
 
   # We can run only off buildbots
   if not options.buildbot:
+    process.Run(['./scons', 'platform=arm', '--mode=nacl,dbg-linux', '-j20'],
+                cwd=NATIVE_CLIENT)
     MakeBionicProject('tests', ['run'])
+    MakeBionicProject('newtests', ['run'])
+
+  dst = os.path.join(TOOLCHAIN_BUILD_OUT, 'linux_arm_bionic', 'log.txt')
+  with open(dst, 'w') as dstf:
+    process.Run(['git', 'log', '-n', '1'],
+                cwd=os.path.join(TOOLCHAIN_BUILD_SRC, 'bionic'),
+                outfile=dstf,
+                verbose=False)
 
   if options.buildbot or options.upload:
     zipname = 'naclsdk_linux_arm_bionic.tgz'
-    ArchiveAndUpload(version, zipname, 'linux_arm_bionic')
+    ArchiveAndUpload(version, zipname, 'linux_arm_bionic',
+                     options.packages_file)
 
 
 if __name__ == '__main__':

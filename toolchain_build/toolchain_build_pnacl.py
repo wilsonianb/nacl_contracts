@@ -12,14 +12,10 @@
    The real entry plumbing and CLI flags are also in toolchain_main.py.
 """
 
-import base64
 import fnmatch
 import logging
 import os
-import re
 import shutil
-import stat
-import subprocess
 import sys
 import zipfile
 
@@ -43,11 +39,11 @@ import argparse
 
 # Scons tests can check this version number to decide whether to enable tests
 # for toolchain bug fixes or new features.  This allows tests to be enabled on
-# the toolchain buildbots/trybots before the new toolchain version is rolled
-# into TOOL_REVISIONS (i.e. before the tests would pass on the main NaCl
-# buildbots/trybots).  If you are adding a test that depends on a toolchain
-# change, you can increment this version number manually.
-FEATURE_VERSION = 4
+# the toolchain buildbots/trybots before the new toolchain version is pinned
+# (i.e. before the tests would pass on the main NaCl buildbots/trybots).
+# If you are adding a test that depends on a toolchain change, you can
+# increment this version number manually.
+FEATURE_VERSION = 5
 
 # For backward compatibility, these key names match the directory names
 # previously used with gclient
@@ -66,25 +62,23 @@ GIT_REPOS = {
 GIT_BASE_URL = 'https://chromium.googlesource.com/native_client/'
 GIT_DEPS_FILE = os.path.join(NACL_DIR, 'pnacl', 'COMPONENT_REVISIONS')
 
-# TODO(dschuff): Some of this cygwin/mingw logic duplicates stuff in command.py
-# and the mechanism for switching between cygwin and mingw is bad.
-# Path to the hermetic cygwin
+# TODO(dschuff): Some of this mingw logic duplicates stuff in command.py
 BUILD_CROSS_MINGW = False
-CYGWIN_PATH = os.path.join(NACL_DIR, 'cygwin')
 # Path to the mingw cross-compiler libs on Ubuntu
 CROSS_MINGW_LIBPATH = '/usr/lib/gcc/i686-w64-mingw32/4.6'
 # Path and version of the native mingw compiler to be installed on Windows hosts
 MINGW_PATH = os.path.join(NACL_DIR, 'mingw32')
 MINGW_VERSION = 'i686-w64-mingw32-4.8.1'
 
-ALL_ARCHES = ('x86-32', 'x86-64', 'arm', 'mips32', 'x86-32-nonsfi')
+ALL_ARCHES = ('x86-32', 'x86-64', 'arm', 'mips32',
+              'x86-32-nonsfi', 'arm-nonsfi')
 # MIPS32 doesn't use biased bitcode, and nonsfi targets don't need it.
 BITCODE_BIASES = tuple(bias for bias in ('portable', 'x86-32', 'x86-64', 'arm'))
 
 MAKE_DESTDIR_CMD = ['make', 'DESTDIR=%(abs_output)s']
 
 def TripleIsWindows(t):
-  return fnmatch.fnmatch(t, '*-mingw32*') or fnmatch.fnmatch(t, '*cygwin*')
+  return fnmatch.fnmatch(t, '*-mingw32*')
 
 
 def CompilersForHost(host):
@@ -134,10 +128,9 @@ def ConfigureHostArchFlags(host):
     # that we don't want to have to distribute alongside our binaries.
     # So just disable it, and compiler messages will always be in US English.
     configure_args.append('--disable-nls')
-    if not command.Runnable.use_cygwin:
-      configure_args.extend(['LDFLAGS=-L%(abs_libdl)s',
-                             'CFLAGS=-isystem %(abs_libdl)s',
-                             'CXXFLAGS=-isystem %(abs_libdl)s'])
+    configure_args.extend(['LDFLAGS=-L%(abs_libdl)s',
+                           'CFLAGS=-isystem %(abs_libdl)s',
+                           'CXXFLAGS=-isystem %(abs_libdl)s'])
   return configure_args
 
 
@@ -169,8 +162,7 @@ def CmakeHostArchFlags(host, options):
 
 def MakeCommand(host):
   make_command = ['make']
-  if (not pynacl.platform.IsWindows() or
-      command.Runnable.use_cygwin):
+  if not pynacl.platform.IsWindows():
     # The make that ships with msys sometimes hangs when run with -j.
     # The ming32-make that comes with the compiler itself reportedly doesn't
     # have this problem, but it has issues with pathnames with LLVM's build.
@@ -188,13 +180,7 @@ def MakeCommand(host):
 def CopyWindowsHostLibs(host):
   if not TripleIsWindows(host):
     return []
-  if command.Runnable.use_cygwin:
-    libs = ('cyggcc_s-1.dll', 'cygiconv-2.dll', 'cygwin1.dll', 'cygintl-8.dll',
-            'cygstdc++-6.dll', 'cygz.dll')
-    return [command.Copy(
-                    os.path.join(CYGWIN_PATH, 'bin', lib),
-                    os.path.join('%(output)s', 'bin', lib))
-                for lib in libs]
+
   if pynacl.platform.IsWindows():
     lib_path = os.path.join(MINGW_PATH, 'bin')
     # The native minGW compiler uses winpthread, but the Ubuntu cross compiler
@@ -208,27 +194,27 @@ def CopyWindowsHostLibs(host):
                   os.path.join('%(output)s', 'bin', lib))
                for lib in libs]
 
-def GetGitSyncCmdCallback(revisions):
-  """Return a callback which returns the git sync command for a component.
+def GetGitSyncCmdsCallback(revisions):
+  """Return a callback which returns the git sync commands for a component.
 
      This allows all the revision information to be processed here while giving
      other modules like pnacl_targetlibs.py the ability to define their own
      source targets with minimal boilerplate.
   """
-  def GetGitSyncCmd(component):
-    return command.SyncGitRepo(GIT_BASE_URL + GIT_REPOS[component],
-                             '%(output)s',
-                             revisions[component])
-  return GetGitSyncCmd
+  def GetGitSyncCmds(component):
+    return [command.SyncGitRepo(GIT_BASE_URL + GIT_REPOS[component],
+                                '%(output)s',
+                                revisions[component]),
+            command.Runnable(pnacl_commands.CmdCheckoutGitBundleForTrybot,
+                             component, '%(output)s')]
+  return GetGitSyncCmds
 
-def HostToolsSources(GetGitSyncCmd):
+def HostToolsSources(GetGitSyncCmds):
   sources = {
       'binutils_pnacl_src': {
           'type': 'source',
           'output_dirname': 'binutils',
-          'commands': [
-              GetGitSyncCmd('binutils'),
-          ],
+          'commands': GetGitSyncCmds('binutils'),
       },
       # For some reason, the llvm build using --with-clang-srcdir chokes if the
       # clang source directory is named something other than 'clang', so don't
@@ -236,16 +222,23 @@ def HostToolsSources(GetGitSyncCmd):
       'clang_src': {
           'type': 'source',
           'output_dirname': 'clang',
-          'commands': [
-              GetGitSyncCmd('clang'),
-          ],
+          'commands': GetGitSyncCmds('clang'),
       },
       'llvm_src': {
           'type': 'source',
           'output_dirname': 'llvm',
-          'commands': [
-              GetGitSyncCmd('llvm'),
-          ],
+          'commands': GetGitSyncCmds('llvm'),
+      },
+  }
+  return sources
+
+
+def TestsuiteSources(GetGitSyncCmds):
+  sources = {
+      'llvm_testsuite_src': {
+          'type': 'source',
+          'output_dirname': 'llvm-test-suite',
+          'commands': GetGitSyncCmds('llvm-test-suite'),
       },
   }
   return sources
@@ -253,7 +246,7 @@ def HostToolsSources(GetGitSyncCmd):
 
 def HostLibs(host):
   libs = {}
-  if TripleIsWindows(host) and not command.Runnable.use_cygwin:
+  if TripleIsWindows(host):
     if pynacl.platform.IsWindows():
       ar = 'ar'
     else:
@@ -291,6 +284,12 @@ def HostTools(host, options):
     return 'host_x86_64' if IsHost64(host) else 'host_x86_32'
   def BinSubdir(host):
     return 'bin64' if host == 'x86_64-linux' else 'bin'
+  # Return the file name with the appropriate suffix for an executable file.
+  def Exe(file):
+    if TripleIsWindows(host):
+      return file + '.exe'
+    else:
+      return file
   tools = {
       H('binutils_pnacl'): {
           'dependencies': ['binutils_pnacl_src'],
@@ -382,7 +381,13 @@ def HostTools(host, options):
                   'VERBOSE=1',
                   'NACL_SANDBOX=0',
                   'all']),
-              command.Command(MAKE_DESTDIR_CMD + ['install'])] +
+              command.Command(MAKE_DESTDIR_CMD + ['install']),
+              command.Remove(*[os.path.join('%(output)s', 'lib', f) for f in
+                              '*.a', '*Hello.*', 'BugpointPasses.*']),
+              command.Remove(*[os.path.join('%(output)s', 'bin', f) for f in
+                               Exe('clang-format'), Exe('clang-check'),
+                               Exe('c-index-test'), Exe('clang-tblgen'),
+                               Exe('llvm-tblgen')])] +
               CopyWindowsHostLibs(host),
       },
   }
@@ -390,7 +395,7 @@ def HostTools(host, options):
     tools.update(llvm_cmake)
   else:
     tools.update(llvm_autoconf)
-  if TripleIsWindows(host) and not command.Runnable.use_cygwin:
+  if TripleIsWindows(host):
     tools[H('binutils_pnacl')]['dependencies'].append('libdl')
     tools[H('llvm')]['dependencies'].append('libdl')
   return tools
@@ -452,32 +457,7 @@ def SyncPNaClRepos(revisions):
         clean=is_newlib
     )
 
-    # For testing LLVM, Clang, etc. changes on the trybots, look for a
-    # Git bundle file created by llvm_change_try_helper.sh.
-    bundle_file = os.path.join(NACL_DIR, 'pnacl', 'not_for_commit',
-                               '%s_bundle' % repo)
-    base64_file = '%s.b64' % bundle_file
-    if os.path.exists(base64_file):
-      input_fh = open(base64_file, 'r')
-      output_fh = open(bundle_file, 'wb')
-      base64.decode(input_fh, output_fh)
-      input_fh.close()
-      output_fh.close()
-      subprocess.check_call(
-          pynacl.repo_tools.GitCmd() + ['fetch'],
-          cwd=destination
-      )
-      subprocess.check_call(
-          pynacl.repo_tools.GitCmd() + ['bundle', 'unbundle', bundle_file],
-          cwd=destination
-      )
-      commit_id_file = os.path.join(NACL_DIR, 'pnacl', 'not_for_commit',
-                                    '%s_commit_id' % repo)
-      commit_id = open(commit_id_file, 'r').readline().strip()
-      subprocess.check_call(
-          pynacl.repo_tools.GitCmd() + ['checkout', commit_id],
-          cwd=destination
-      )
+    pnacl_commands.CheckoutGitBundleForTrybot(repo, destination)
 
 
 def InstallMinGWHostCompiler():
@@ -582,6 +562,9 @@ if __name__ == '__main__':
                       help="Use clang instead of gcc with LLVM's cmake build")
   parser.add_argument('--sanitize', choices=['address', 'thread', 'undefined'],
                       help="Use a sanitizer with LLVM's clang cmake build")
+  parser.add_argument('--testsuite-sync', action='store_true', default=False,
+                      help=('Sync the sources for the LLVM testsuite. '
+                      'Only useful if --sync/ is also enabled'))
   args, leftover_args = parser.parse_known_args()
   if '-h' in leftover_args or '--help' in leftover_args:
     print 'The following arguments are specific to toolchain_build_pnacl.py:'
@@ -600,11 +583,14 @@ if __name__ == '__main__':
     SyncPNaClRepos(revisions)
     sys.exit(0)
 
-  if pynacl.platform.IsWindows() and not command.Runnable.use_cygwin:
+  if pynacl.platform.IsWindows():
     InstallMinGWHostCompiler()
 
   packages = {}
-  packages.update(HostToolsSources(GetGitSyncCmdCallback(revisions)))
+  packages.update(HostToolsSources(GetGitSyncCmdsCallback(revisions)))
+  if args.testsuite_sync:
+    packages.update(TestsuiteSources(GetGitSyncCmdsCallback(revisions)))
+
 
   if pynacl.platform.IsLinux64():
     hosts = ['i686-linux']
@@ -613,7 +599,7 @@ if __name__ == '__main__':
   else:
     hosts = [pynacl.platform.PlatformTriple()]
   if pynacl.platform.IsLinux() and BUILD_CROSS_MINGW:
-    hosts.append('i686-w64-mingw32')
+    hosts.append(pynacl.platform.PlatformTriple('win', 'x86-32'))
   for host in hosts:
     packages.update(HostLibs(host))
     packages.update(HostTools(host, args))
@@ -626,7 +612,7 @@ if __name__ == '__main__':
   # TODO(dschuff): Figure out a better way to test things on toolchain bots.
   if pynacl.platform.IsLinux64():
     packages.update(pnacl_targetlibs.TargetLibsSrc(
-      GetGitSyncCmdCallback(revisions)))
+      GetGitSyncCmdsCallback(revisions)))
     for bias in BITCODE_BIASES:
       packages.update(pnacl_targetlibs.BitcodeLibs(hosts[0], bias))
     for arch in ALL_ARCHES:

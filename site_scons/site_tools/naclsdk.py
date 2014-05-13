@@ -58,51 +58,6 @@ def _StubOutEnvToolsForBuiltElsewhere(env):
               STRIP='true')
 
 
-def _GetNaClSdkRoot(env, sdk_mode, psdk_mode):
-  """Return the path to the sdk.
-
-  Args:
-    env: The SCons environment in question.
-    sdk_mode: A string indicating which location to select the tools from.
-  Returns:
-    The path to the sdk.
-  """
-
-  # Allow pnacl to override its path separately.  See comments for why
-  # psdk_mode is separate from sdk_mode.
-  if env.Bit('bitcode') and psdk_mode.startswith('custom:'):
-    return os.path.abspath(psdk_mode[len('custom:'):])
-
-  if sdk_mode == 'local':
-    if env['PLATFORM'] in ['win32', 'cygwin']:
-      # Try to use cygpath under the assumption we are running thru cygwin.
-      # If this is not the case, then 'local' doesn't really make any sense,
-      # so then we should complain.
-      try:
-        path = subprocess.Popen(
-            ['cygpath', '-m', '/usr/local/nacl-sdk'],
-            shell=True,
-            stdout=subprocess.PIPE).communicate()[0].replace('\n', '')
-      except WindowsError:
-        raise NotImplementedError(
-            'Not able to decide where /usr/local/nacl-sdk is on this platform,'
-            'use naclsdk_mode=custom:...')
-      return path
-    else:
-      return '/usr/local/nacl-sdk'
-
-  elif sdk_mode == 'download':
-    return env.GetToolchainDir()
-  elif sdk_mode.startswith('custom:'):
-    return os.path.abspath(sdk_mode[len('custom:'):])
-
-  elif sdk_mode == 'manual':
-    return None
-
-  else:
-    raise Exception('Unknown sdk mode: %r' % sdk_mode)
-
-
 def _SetEnvForNativeSdk(env, sdk_path):
   """Initialize environment according to target architecture."""
 
@@ -213,39 +168,20 @@ def _SetEnvForPnacl(env, root):
       arch = '%s-linux' % arch
     elif env.Bit('host_mac'):
       arch = '%s-mac' % arch
+  if env.Bit('nonsfi_nacl'):
+    arch += '-nonsfi'
   arch_flag = ' -arch %s' % arch
   if env.Bit('pnacl_generate_pexe'):
     ld_arch_flag = ''
   else:
     ld_arch_flag = arch_flag
 
-  if env.Bit('nacl_glibc'):
-    subroot = root + '/glibc'
-  else:
-    subroot = root
-
   translator_root = os.path.join(os.path.dirname(root), 'pnacl_translator')
 
-  binprefix = os.path.join(subroot, 'bin', 'pnacl-')
+  binprefix = os.path.join(root, 'bin', 'pnacl-')
   binext = ''
   if env.Bit('host_windows'):
     binext = '.bat'
-
-  if env.Bit('nacl_glibc'):
-    # TODO(pdox): This bias is needed because runnable-ld is
-    # expected to be in the same directory as the SDK.
-    # This assumption should be removed.
-    pnacl_lib = os.path.join(root, 'lib-%s' % arch)
-    pnacl_extra_lib = os.path.join(subroot, 'lib')
-  else:
-    pnacl_lib = os.path.join(subroot, 'lib')
-    pnacl_extra_lib = ''
-
-  #TODO(robertm): remove NACL_SDK_INCLUDE ASAP
-  if env.Bit('nacl_glibc'):
-    pnacl_include = os.path.join(root, 'glibc', 'usr', 'include')
-  else:
-    pnacl_include = os.path.join(root, 'usr', 'include')
 
   pnacl_ar = binprefix + 'ar' + binext
   pnacl_as = binprefix + 'as' + binext
@@ -292,12 +228,9 @@ def _SetEnvForPnacl(env, root):
   if env.Bit('x86_64_zero_based_sandbox'):
     pnacl_translate_flags += ' -sfi-zero-based-sandbox'
 
-  if pnacl_extra_lib:
-    env.Prepend(LIBPATH=pnacl_extra_lib)
-
   env.Replace(# Replace header and lib paths.
-              NACL_SDK_INCLUDE=pnacl_include,
-              NACL_SDK_LIB=pnacl_lib,
+              NACL_SDK_INCLUDE=os.path.join(root, 'usr', 'include'),
+              NACL_SDK_LIB=os.path.join(root, 'lib'),
               # Remove arch-specific flags (if any)
               BASE_LINKFLAGS='',
               BASE_CFLAGS='',
@@ -339,22 +272,6 @@ def _SetEnvForPnacl(env, root):
       env.Replace(TRANSLATE='true')
     env.Replace(PNACLFINALIZE='true')
 
-
-def _SetEnvForSdkManually(env):
-  def GetEnvOrDummy(v):
-    return os.getenv('NACL_SDK_' + v, 'MISSING_SDK_' + v)
-
-  env.Replace(# Replace header and lib paths.
-              NACL_SDK_INCLUDE=GetEnvOrDummy('INCLUDE'),
-              NACL_SDK_LIB=GetEnvOrDummy('LIB'),
-              # Replace the normal unix tools with the NaCl ones.
-              CC=GetEnvOrDummy('CC'),
-              CXX=GetEnvOrDummy('CXX'),
-              AR=GetEnvOrDummy('AR'),
-              # NOTE: use g++ for linking so we can handle c AND c++
-              LINK=GetEnvOrDummy('LINK'),
-              RANLIB=GetEnvOrDummy('RANLIB'),
-              )
 
 def PNaClForceNative(env):
   assert(env.Bit('bitcode'))
@@ -651,17 +568,6 @@ def generate(env):
   env.AddMethod(PNaClForceNative)
   env.AddMethod(PNaClGetNNaClEnv)
 
-  # Get configuration option for getting the naclsdk.  Default is download.
-  # We have a separate flag for pnacl "psdk_mode" since even with PNaCl,
-  # the native nacl-gcc toolchain is used to build some parts like
-  # the irt-core.
-  sdk_mode = SCons.Script.ARGUMENTS.get('naclsdk_mode', 'download')
-  psdk_mode = SCons.Script.ARGUMENTS.get('pnaclsdk_mode', 'default')
-  if psdk_mode != 'default' and not psdk_mode.startswith('custom:'):
-    raise Exception(
-      'pnaclsdk_mode only supports "default" or "custom:path", not %s' %
-      psdk_mode)
-
   # Invoke the various unix tools that the NativeClient SDK resembles.
   env.Tool('g++')
   env.Tool('gcc')
@@ -730,31 +636,27 @@ def generate(env):
       env[com] = "${TEMPFILE('%s')}" % env[com]
 
   # Get root of the SDK.
-  root = _GetNaClSdkRoot(env, sdk_mode, psdk_mode)
+  root = env.GetToolchainDir()
 
-  # Determine where to get the SDK from.
-  if sdk_mode == 'manual':
-    _SetEnvForSdkManually(env)
+  # if bitcode=1 use pnacl toolchain
+  if env.Bit('bitcode'):
+    _SetEnvForPnacl(env, root)
+
+    # Get GDB from the nacl-gcc toolchain even when using PNaCl.
+    # TODO(mseaborn): We really want the nacl-gdb binary to be in a
+    # separate tarball from the nacl-gcc toolchain, then this step
+    # will not be necessary.
+    # See http://code.google.com/p/nativeclient/issues/detail?id=2773
+    if env.Bit('target_x86'):
+      temp_env = env.Clone()
+      temp_env.ClearBits('bitcode')
+      temp_root = temp_env.GetToolchainDir()
+      _SetEnvForNativeSdk(temp_env, temp_root)
+      env.Replace(GDB=temp_env['GDB'])
+  elif env.Bit('built_elsewhere'):
+    _StubOutEnvToolsForBuiltElsewhere(env)
   else:
-    # if bitcode=1 use pnacl toolchain
-    if env.Bit('bitcode'):
-      _SetEnvForPnacl(env, root)
-
-      # Get GDB from the nacl-gcc toolchain even when using PNaCl.
-      # TODO(mseaborn): We really want the nacl-gdb binary to be in a
-      # separate tarball from the nacl-gcc toolchain, then this step
-      # will not be necessary.
-      # See http://code.google.com/p/nativeclient/issues/detail?id=2773
-      if env.Bit('target_x86'):
-        temp_env = env.Clone()
-        temp_env.ClearBits('bitcode')
-        temp_root = _GetNaClSdkRoot(temp_env, sdk_mode, psdk_mode)
-        _SetEnvForNativeSdk(temp_env, temp_root)
-        env.Replace(GDB=temp_env['GDB'])
-    elif env.Bit('built_elsewhere'):
-      _StubOutEnvToolsForBuiltElsewhere(env)
-    else:
-      _SetEnvForNativeSdk(env, root)
+    _SetEnvForNativeSdk(env, root)
 
   env.Prepend(LIBPATH='${NACL_SDK_LIB}')
 

@@ -210,9 +210,10 @@ static void NaClSecureServiceLoadModuleRpc(
                     nexe,
                     NaClSecureServiceLoadModuleRpcCallback,
                     (void *) done_cls);
+  NaClDescUnref(nexe);
+  nexe = NULL;
 
   NaClLog(4, "NaClSecureServiceLoadModuleRpc: done\n");
-  NaClDescUnref(nexe);
 }
 
 /*

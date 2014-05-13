@@ -50,12 +50,6 @@ fi
 echo @@@BUILD_STEP compile_toolchain@@@
 mkdir -p ../toolchain/${PLATFORM}_x86/nacl_x86_newlib
 make -j8 clean buildbot-build-with-newlib
-if [[ ${PLATFORM} == win ]]; then
-../mingw/msys/bin/sh.exe -c "export PATH=/mingw/bin:/bin:\$PATH &&
-  export TOOLCHAINLOC &&
-  export TOOLCHAINNAME &&
-  make -j8 gdb 2>&1"
-fi
 
 echo @@@BUILD_STEP canonicalize timestamps@@@
 ./canonicalize_timestamps.sh sdk
@@ -72,54 +66,77 @@ else
 fi > naclsdk.tgz.sha1hash
 
 if [[ "${BUILDBOT_SLAVE_TYPE:-Trybot}" != "Trybot" ]]; then
-  # Upload the toolchain before running the tests, in case the tests
-  # fail.  We do not want a flaky test or a non-toolchain-related bug to
-  # cause us to lose the toolchain snapshot, especially since this takes
-  # so long to build on Windows.  We can always re-test a toolchain
-  # snapshot on the trybots.
-  echo @@@BUILD_STEP archive_build@@@
-  (
-    gsutil=../buildbot/gsutil.sh
-    GS_BASE=gs://nativeclient-archive2/toolchain
-    for destrevision in ${BUILDBOT_GOT_REVISION} latest ; do
-      for suffix in tgz tgz.sha1hash ; do
-        ${gsutil} cp -a public-read \
-          naclsdk.${suffix} \
-          ${GS_BASE}/${destrevision}/naclsdk_${PLATFORM}_x86.${suffix}
-      done
-    done
-  )
-  echo @@@STEP_LINK@download@http://gsdview.appspot.com/nativeclient-archive2/toolchain/${BUILDBOT_GOT_REVISION}/@@@
-
-  echo @@@BUILD_STEP archive_extract_package@@@
-  ${NATIVE_PYTHON} ../build/package_version/package_version.py archive \
-    --archive-package=nacl_x86_newlib --extract \
-    naclsdk.tgz,sdk/nacl-sdk@https://storage.googleapis.com/nativeclient-archive2/toolchain/${BUILDBOT_GOT_REVISION}/naclsdk_${PLATFORM}_x86.tgz
-
-  ${NATIVE_PYTHON} ../build/package_version/package_version.py --annotate \
-      upload --upload-package=nacl_x86_newlib \
-      --revision=${BUILDBOT_GOT_REVISION}
+  GSD_BUCKET=nativeclient-archive2
+  UPLOAD_REV=${BUILDBOT_GOT_REVISION}
 else
-  echo @@@BUILD_STEP archive_extract_package@@@
-  ${NATIVE_PYTHON} ../build/package_version/package_version.py archive \
-    --archive-package=nacl_x86_newlib --extract \
-    naclsdk.tgz,sdk/nacl-sdk
+  GSD_BUCKET=nativeclient-trybot/packages
+  UPLOAD_REV=${BUILDBOT_BUILDERNAME}/${BUILDBOT_BUILDNUMBER}
 fi
 
-cd ..
+# Upload the toolchain before running the tests, in case the tests
+# fail.  We do not want a flaky test or a non-toolchain-related bug to
+# cause us to lose the toolchain snapshot, especially since this takes
+# so long to build on Windows.  We can always re-test a toolchain
+# snapshot on the trybots.
+echo @@@BUILD_STEP archive_build@@@
+(
+  gsutil=../buildbot/gsutil.sh
+  GS_BASE=gs://${GSD_BUCKET}/toolchain
+  for destrevision in ${UPLOAD_REV} latest ; do
+    for suffix in tgz tgz.sha1hash ; do
+      ${gsutil} cp -a public-read \
+        naclsdk.${suffix} \
+        ${GS_BASE}/${destrevision}/naclsdk_${PLATFORM}_x86.${suffix}
+    done
+  done
+)
+echo @@@STEP_LINK@download@http://gsdview.appspot.com/${GSD_BUCKET}/toolchain/${UPLOAD_REV}/@@@
+
 if [[ ${PLATFORM} == win ]]; then
-  ${NATIVE_PYTHON} buildbot/buildbot_standard.py opt 64 newlib
+  GDB_TGZ=gdb_i686_w64_mingw32.tgz
 elif [[ ${PLATFORM} == mac ]]; then
-  ${NATIVE_PYTHON} buildbot/buildbot_standard.py opt 32 newlib
+  GDB_TGZ=gdb_x86_64_apple_darwin.tgz
 elif [[ ${PLATFORM} == linux ]]; then
-  ${NATIVE_PYTHON} buildbot/buildbot_standard.py opt 32 newlib
+  GDB_TGZ=gdb_i686_linux.tgz
 else
   echo "ERROR, bad platform."
   exit 1
 fi
 
-if [[ "${DONT_BUILD_COMPATIBLE_TOOLCHAINS:-no}" != "yes" ]]; then
-  echo @@@BUILD_STEP sync backports@@@
-  rm -rf tools/BACKPORTS/ppapi*
-  tools/BACKPORTS/build_backports.sh VERSIONS ${PLATFORM} newlib
+echo @@@BUILD_STEP archive_extract_package@@@
+${NATIVE_PYTHON} ../build/package_version/package_version.py \
+  archive --archive-package=nacl_x86_newlib --extract \
+  --extra-archive ${GDB_TGZ} \
+  naclsdk.tgz,sdk/nacl-sdk@https://storage.googleapis.com/${GSD_BUCKET}/toolchain/${UPLOAD_REV}/naclsdk_${PLATFORM}_x86.tgz \
+
+${NATIVE_PYTHON} ../build/package_version/package_version.py \
+  --cloud-bucket=${GSD_BUCKET} --annotate \
+  upload --skip-missing \
+  --upload-package=nacl_x86_newlib --revision=${UPLOAD_REV}
+
+# Before we start testing, put in dummy mock archives so gyp can still untar
+# the entire package.
+${NATIVE_PYTHON} ../build/package_version/package_version.py fillemptytars \
+  --fill-package nacl_x86_newlib
+
+cd ..
+if [[ ${PLATFORM} == win ]]; then
+  ${NATIVE_PYTHON} buildbot/buildbot_standard.py --scons-args='no_gdb_tests=1' \
+    opt 64 newlib
+elif [[ ${PLATFORM} == mac ]]; then
+  ${NATIVE_PYTHON} buildbot/buildbot_standard.py --scons-args='no_gdb_tests=1' \
+    opt 32 newlib
+elif [[ ${PLATFORM} == linux ]]; then
+  ${NATIVE_PYTHON} buildbot/buildbot_standard.py --scons-args='no_gdb_tests=1' \
+    opt 32 newlib
+else
+  echo "ERROR, bad platform."
+  exit 1
 fi
+
+# sync_backports is obsolete and should probably be removed.
+# if [[ "${DONT_BUILD_COMPATIBLE_TOOLCHAINS:-no}" != "yes" ]]; then
+#   echo @@@BUILD_STEP sync backports@@@
+#   rm -rf tools/BACKPORTS/ppapi*
+#   tools/BACKPORTS/build_backports.sh VERSIONS ${PLATFORM} newlib
+# fi
