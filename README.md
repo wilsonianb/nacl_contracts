@@ -8,6 +8,11 @@ A contract is untrusted code run as a Native Client (NaCl) .nexe executable file
 
 A set of calls are made available to the contract in order to interact with the Ripple ledger.
 
+###Build instructions:
+```
+./scons
+```
+
 ## License
 Ripple is open source and permissively licensed under the ISC license. See the
 LICENSE file for more details.
