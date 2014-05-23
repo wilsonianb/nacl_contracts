@@ -125,9 +125,57 @@ static void NaClRippleLedgerServiceGetAccountTxsRpc(
   NaClRippleLedgerReleaseChannel_release_mu(proxy_conn);
 }
 
+static void NaClRippleLedgerServiceSubmitPaymentTxRpc(
+    struct NaClSrpcRpc      *rpc,
+    struct NaClSrpcArg      **in_args,
+    struct NaClSrpcArg      **out_args,
+    struct NaClSrpcClosure  *done_cls) {
+  struct NaClRippleLedgerServiceConnection  *proxy_conn =
+      (struct NaClRippleLedgerServiceConnection *) rpc->channel->server_instance_data;
+  char  *account   = in_args[0]->arrays.str;
+  char  *secret    = in_args[1]->arrays.str;
+  char  *recipient = in_args[2]->arrays.str;
+  char  *amount    = in_args[3]->arrays.str;
+  char  *currency  = in_args[4]->arrays.str;
+  NaClSrpcError srpc_error;
+
+  UNREFERENCED_PARAMETER(out_args);
+  NaClLog(4, "NaClRippleLedgerServiceSubmitPaymentTxRpc\n");
+
+  NaClRippleLedgerWaitForChannel_yield_mu(proxy_conn);
+
+  NaClLog(4,
+          "NaClRippleLedgerServiceSubmitPaymentTxRpc: invoking %s\n",
+          NACL_RIPPLE_LEDGER_SUBMIT_PAYMENT_TX);
+
+  if (NACL_SRPC_RESULT_OK !=
+      (srpc_error =
+       NaClSrpcInvokeBySignature(&proxy_conn->client_channel,
+                                 NACL_RIPPLE_LEDGER_SUBMIT_PAYMENT_TX,
+                                 account,
+                                 secret,
+                                 recipient,
+                                 amount,
+                                 currency))) {
+    NaClLog(LOG_ERROR,
+            ("Ripple ledger read via channel 0x%"NACL_PRIxPTR" with RPC "
+             NACL_RIPPLE_LEDGER_SUBMIT_PAYMENT_TX" failed: %d\n"),
+            (uintptr_t) &proxy_conn->client_channel,
+            srpc_error);
+    rpc->result = srpc_error;
+  } else {
+    NaClLog(3,
+            "NaClRippleLedgerServiceSubmitPaymentTxRpc, proxy returned\n");
+    rpc->result = NACL_SRPC_RESULT_OK;
+  }
+  (*done_cls->Run)(done_cls);
+  NaClRippleLedgerReleaseChannel_release_mu(proxy_conn);
+}
+
 struct NaClSrpcHandlerDesc const kNaClRippleLedgerServiceHandlers[] = {
   { NACL_RIPPLE_LEDGER_SERVICE_READ, NaClRippleLedgerServiceReadRpc, },
   { NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS, NaClRippleLedgerServiceGetAccountTxsRpc, },
+  { NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX, NaClRippleLedgerServiceSubmitPaymentTxRpc, },
   { (char const *) NULL, (NaClSrpcMethod) NULL, },
 };
 

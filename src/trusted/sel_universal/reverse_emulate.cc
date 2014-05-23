@@ -78,6 +78,13 @@ class ReverseEmulate : public nacl::ReverseInterface {
   virtual void GetRippleAccountTxs(nacl::string account,
                                    nacl::string ledger_index);
 
+  // Submit Ripple payment transaction.
+  virtual void SubmitRipplePaymentTx(nacl::string account,
+                                     nacl::string secret,
+                                     nacl::string recipient,
+                                     nacl::string amount,
+                                     nacl::string currency);
+
   // covariant impl of Ref()
   ReverseEmulate* Ref() {  // down_cast
     return reinterpret_cast<ReverseEmulate*>(RefCountBase::Ref());
@@ -421,6 +428,23 @@ void ReverseEmulate::GetRippleAccountTxs(nacl::string account,
   }
   
   printf("Let's get some account transactions!\n");
+}
+
+void ReverseEmulate::SubmitRipplePaymentTx(nacl::string account,
+                                           nacl::string secret,
+                                           nacl::string recipient,
+                                           nacl::string amount,
+                                           nacl::string currency) {
+  NaClLog(1, "ReverseEmulate::SubmitRipplePaymentTx\n");
+  if (account.empty() || secret.empty() || recipient.empty() || 
+      amount.empty() || currency.empty()) {
+    NaClLog(LOG_ERROR,
+            "ReverseEmulate::SubmitRipplePaymentTx:"
+            " missing data\n");
+    return;
+  }
+  
+  printf("Let's submit a payment transaction!\n");
 }
 
 int32_t ReverseEmulate::ReserveProcessSlot() {

@@ -409,6 +409,30 @@ static void NaClReverseServiceGetRippleAccountTxsRpc(
   (*done_cls->Run)(done_cls);
 }
 
+static void NaClReverseServiceSubmitRipplePaymentTxRpc(
+    struct NaClSrpcRpc      *rpc,
+    struct NaClSrpcArg      **in_args,
+    struct NaClSrpcArg      **out_args,
+    struct NaClSrpcClosure  *done_cls) {
+  struct NaClReverseService *nrsp =
+    (struct NaClReverseService *) rpc->channel->server_instance_data;
+  char *account   = in_args[0]->arrays.str;
+  char *secret    = in_args[1]->arrays.str;
+  char *recipient = in_args[2]->arrays.str;
+  char *amount    = in_args[3]->arrays.str;
+  char *currency  = in_args[4]->arrays.str;
+  
+  UNREFERENCED_PARAMETER(out_args);
+  NaClLog(4, "Entered SubmitRipplePaymentTxRpc: 0x%08"NACL_PRIxPTR", %s, %s, %s, %s, %s\n",
+          (uintptr_t) nrsp, account, secret, recipient, amount, currency);
+  (*NACL_VTBL(NaClReverseInterface, nrsp->iface)->
+               SubmitRipplePaymentTx)(nrsp->iface,
+               account, secret, recipient, amount, currency);
+  NaClLog(4, "Leaving SubmitRipplePaymentTxRpc\n");
+  rpc->result = NACL_SRPC_RESULT_OK;
+  (*done_cls->Run)(done_cls);
+}
+
 struct NaClReverseCountingThreadInterface {
   struct NaClThreadInterface  base NACL_IS_REFCOUNT_SUBCLASS;
   struct NaClReverseService   *reverse_service;
@@ -535,6 +559,7 @@ struct NaClSrpcHandlerDesc const kNaClReverseServiceHandlers[] = {
   { NACL_REVERSE_REQUEST_QUOTA_FOR_WRITE, NaClReverseServiceRequestQuotaForWriteRpc, },
   { NACL_RIPPLE_LEDGER_READ, NaClReverseServiceReadRippleLedgerRpc, },
   { NACL_RIPPLE_LEDGER_GET_ACCOUNT_TXS, NaClReverseServiceGetRippleAccountTxsRpc, },
+  { NACL_RIPPLE_LEDGER_SUBMIT_PAYMENT_TX, NaClReverseServiceSubmitRipplePaymentTxRpc, },
   { (char const *) NULL, (NaClSrpcMethod) NULL, },
 };
 
@@ -762,6 +787,20 @@ void NaClReverseInterfaceGetRippleAccountTxs(
           (uintptr_t) self, account, ledger_index);
 }
 
+void NaClReverseInterfaceSubmitRipplePaymentTx(
+    struct NaClReverseInterface   *self,
+    char const                    *account,
+    char const                    *secret,
+    char const                    *recipient,
+    char const                    *amount,
+    char const                    *currency) {
+  NaClLog(3,
+          ("NaClReverseInterfaceSubmitRipplePaymentTx(0x%08"NACL_PRIxPTR
+           ", %s, %s, %s, %s, %s)\n"),
+          (uintptr_t) self, account, secret, recipient, amount, currency);
+}
+
+
 void NaClReverseInterfaceCreateProcessFunctorResult(
     struct NaClReverseInterface *self,
     void (*result_functor)(void *functor_state,
@@ -799,4 +838,5 @@ struct NaClReverseInterfaceVtbl const kNaClReverseInterfaceVtbl = {
   NaClReverseInterfaceRequestQuotaForWrite,
   NaClReverseInterfaceReadRippleLedger,
   NaClReverseInterfaceGetRippleAccountTxs,
+  NaClReverseInterfaceSubmitRipplePaymentTx,
 };

@@ -201,6 +201,17 @@ struct NaClReverseInterfaceVtbl {
       struct NaClReverseInterface   *self,
       char const                    *account,
       char const                    *ledger_index);
+
+  /*
+   * Submit Ripple payment transaction.
+   */
+  void                          (*SubmitRipplePaymentTx)(
+      struct NaClReverseInterface   *self,
+      char const                    *account,
+      char const                    *secret,
+      char const                    *recipient,
+      char const                    *amount,
+      char const                    *currency);
 };
 
 /*
@@ -264,6 +275,14 @@ void NaClReverseInterfaceGetRippleAccountTxs(
     struct NaClReverseInterface   *self,
     char const                    *account,
     char const                    *ledger_index);
+
+void NaClReverseInterfaceSubmitRipplePaymentTx(
+    struct NaClReverseInterface   *self,
+    char const                    *account,
+    char const                    *secret,
+    char const                    *recipient,
+    char const                    *amount,
+    char const                    *currency);
 
 extern struct NaClReverseInterfaceVtbl const kNaClReverseInterfaceVtbl;
 
