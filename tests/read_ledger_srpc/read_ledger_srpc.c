@@ -15,22 +15,88 @@
 #include "native_client/src/shared/srpc/nacl_srpc.h"
 #include "native_client/src/public/ripple_ledger_service.h"
 
+NaClSrpcChannel ns_channel;
 
-int main(void) {
-  NaClSrpcChannel ns_channel;
-  int             ns;
-  int             connected_socket;
+const char *account = "Insert contract's ripple address here";
+
+void HandleLedger(NaClSrpcRpc *rpc,
+                  NaClSrpcArg **in_args,
+                  NaClSrpcArg **out_args,
+                  NaClSrpcClosure *done) {
+  //const char *ledger_hash = (const char*) in_args[0]->arrays.str;
+  const char *ledger_index = (const char*) in_args[1]->arrays.str;
   int             ledger;
   int             status;
-  char            *ledger_hash = "7EA447F26C2BB396218D39FEA13DC1273D5BAE10327193783BBE96AAD42C44EB";
-  char            buffer[1024];
-  uint32_t        nbytes = sizeof buffer;
+  NaClSrpcChannel ledger_channel;
+
+  if (NACL_SRPC_RESULT_OK !=
+      NaClSrpcInvokeBySignature(&ns_channel, NACL_NAME_SERVICE_LOOKUP,
+                                "RippleLedgerService", O_RDWR,
+                                &status, &ledger)) {
+    fprintf(stderr, "nameservice lookup RPC failed\n");
+  }
+  printf("Got ripple ledger service descriptor %d\n", ledger);
+  if (-1 == ledger) {
+    fprintf(stderr, "nameservice lookup failed: status %d\n", status);
+    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+    goto done;
+  }
+
+  // connect to Ripple ledger server 
+  int ledger_conn;
+
+  ledger_conn = imc_connect(ledger);
+  printf("Got ripple ledger connection %d\n", ledger_conn);
+  if (-1 == ledger_conn) {
+    fprintf(stderr, "could not connect\n");
+    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+    goto done;
+  }
+
+  if (!NaClSrpcClientCtor(&ledger_channel, ledger_conn)) {
+    fprintf(stderr, "could not build srpc client\n");
+    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+    goto done;
+  }
+  close(ledger);
+
+  if (NACL_SRPC_RESULT_OK !=
+      NaClSrpcInvokeBySignature(&ledger_channel, NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS,
+                                account, ledger_index)) {
+    fprintf(stderr, "read ripple ledger failed\n");
+    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+    goto done;
+  }
+  rpc->result = NACL_SRPC_RESULT_OK;
+ done:
+  done->Run(done);
+}
+
+void HandleTransaction(NaClSrpcRpc *rpc,
+                       NaClSrpcArg **in_args,
+                       NaClSrpcArg **out_args,
+                       NaClSrpcClosure *done) {
+
+  //UNREFERENCED_PARAMETER(in_args);
+  //UNREFERENCED_PARAMETER(out_args);
+
+  rpc->result = NACL_SRPC_RESULT_OK;
+  done->Run(done);
+}
+
+const struct NaClSrpcHandlerDesc srpc_methods[] = {
+  { "new_ledger:ss:", HandleLedger },
+  { "new_transaction:s:", HandleTransaction },
+  { NULL, NULL },
+};
+
+int main(void) {
+  int ns;
+  int connected_socket;
 
   if (!NaClSrpcModuleInit()) {
     return 1;
   }
-  
-  printf ("Hello world\n");
   
   ns = -1;
   nacl_nameservice(&ns);
@@ -46,38 +112,9 @@ int main(void) {
   }
   close(ns);
 
-  if (NACL_SRPC_RESULT_OK !=
-      NaClSrpcInvokeBySignature(&ns_channel, NACL_NAME_SERVICE_LOOKUP,
-                                "RippleLedgerService", O_RDWR,
-                                &status, &ledger)) {
-    fprintf(stderr, "nameservice lookup RPC failed\n");
-  }
-  printf("Got ripple ledger service descriptor %d\n", ledger);
-  if (-1 == ledger) {
-    fprintf(stderr, "nameservice lookup failed: status %d\n", status);
+  if (!NaClSrpcAcceptClientConnection(srpc_methods)) {
     return 1;
   }
-
-  /* connect to Ripple ledger server */
-  int ledger_conn;
-  struct NaClSrpcChannel ledger_channel;
-
-  ledger_conn = imc_connect(ledger);
-  printf("got ripple ledger connection %d\n", ledger_conn);
-  if (-1 == ledger_conn) {
-    fprintf(stderr, "could not connect\n");
-    return 1;
-  }
-  close(ledger);
-  if (!NaClSrpcClientCtor(&ledger_channel, ledger_conn)) {
-    fprintf(stderr, "could not build srpc client\n");
-    return 1;
-  }
-  if (NACL_SRPC_RESULT_OK !=
-      NaClSrpcInvokeBySignature(&ledger_channel, NACL_RIPPLE_LEDGER_SERVICE_READ,
-                                ledger_hash, &nbytes, buffer)) {
-    fprintf(stderr, "read ripple ledger failed, status %d\n", status);
-    return 1;
-  }
-  printf ("Ledger data: %s\n", buffer);
+  NaClSrpcModuleFini();
+  return 0;
 }

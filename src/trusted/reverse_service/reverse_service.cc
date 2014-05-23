@@ -198,6 +198,16 @@ size_t ReadRippleLedger(NaClReverseInterface* self,
   return size;
 }
 
+void GetRippleAccountTxs(NaClReverseInterface* self,
+                         char const* account,
+                         char const* ledger_index) {
+  ReverseInterfaceWrapper* wrapper =
+      reinterpret_cast<ReverseInterfaceWrapper*>(self);
+
+  wrapper->iface->GetRippleAccountTxs(nacl::string(account), 
+                                      nacl::string(ledger_index));
+}
+
 void ReverseInterfaceWrapperDtor(NaClRefCount* vself) {
   ReverseInterfaceWrapper* self =
       reinterpret_cast<ReverseInterfaceWrapper*>(vself);
@@ -223,6 +233,7 @@ static NaClReverseInterfaceVtbl const kReverseInterfaceWrapperVtbl = {
   FinalizeProcess,
   RequestQuotaForWrite,
   ReadRippleLedger,
+  GetRippleAccountTxs,
 };
 
 int ReverseInterfaceWrapperCtor(ReverseInterfaceWrapper* self,

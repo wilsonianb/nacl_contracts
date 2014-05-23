@@ -193,6 +193,14 @@ struct NaClReverseInterfaceVtbl {
       char const                    *ledger_hash,
       char                          *buffer,
       size_t                        buffer_bytes);
+
+  /*
+   * Request specified Ripple ledger entry.
+   */
+  void                          (*GetRippleAccountTxs)(
+      struct NaClReverseInterface   *self,
+      char const                    *account,
+      char const                    *ledger_index);
 };
 
 /*
@@ -251,6 +259,11 @@ size_t NaClReverseInterfaceReadRippleLedger(
     char const                    *ledger_hash,
     char                          *buffer,
     size_t                        buffer_bytes);
+
+void NaClReverseInterfaceGetRippleAccountTxs(
+    struct NaClReverseInterface   *self,
+    char const                    *account,
+    char const                    *ledger_index);
 
 extern struct NaClReverseInterfaceVtbl const kNaClReverseInterfaceVtbl;
 

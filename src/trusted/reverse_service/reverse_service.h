@@ -132,6 +132,10 @@ class ReverseInterface : public RefCountBase {
   // Read ripple ledger.
   virtual bool ReadRippleLedger(nacl::string ledger_hash,
                                 nacl::string* ledger_data) = 0;
+
+  // Request ripple account transactions from specified ledger.
+  virtual void GetRippleAccountTxs(nacl::string account,
+                                   nacl::string ledger_index) = 0;
   
   // covariant impl of Ref()
   ReverseInterface* Ref() {  // down_cast

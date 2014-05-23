@@ -84,8 +84,50 @@ static void NaClRippleLedgerServiceReadRpc(
   NaClRippleLedgerReleaseChannel_release_mu(proxy_conn);
 }
 
+static void NaClRippleLedgerServiceGetAccountTxsRpc(
+    struct NaClSrpcRpc      *rpc,
+    struct NaClSrpcArg      **in_args,
+    struct NaClSrpcArg      **out_args,
+    struct NaClSrpcClosure  *done_cls) {
+  struct NaClRippleLedgerServiceConnection  *proxy_conn =
+      (struct NaClRippleLedgerServiceConnection *) rpc->channel->server_instance_data;
+  char          *account = in_args[0]->arrays.str;
+  char          *ledger_index = in_args[1]->arrays.str;
+  NaClSrpcError srpc_error;
+
+  UNREFERENCED_PARAMETER(out_args);
+  NaClLog(4, "NaClRippleLedgerServiceGetAccountTxsRpc\n");
+
+  NaClRippleLedgerWaitForChannel_yield_mu(proxy_conn);
+
+  NaClLog(4,
+          "NaClRippleLedgerServiceGetAccountTxsRpc: invoking %s\n",
+          NACL_RIPPLE_LEDGER_GET_ACCOUNT_TXS);
+
+  if (NACL_SRPC_RESULT_OK !=
+      (srpc_error =
+       NaClSrpcInvokeBySignature(&proxy_conn->client_channel,
+                                 NACL_RIPPLE_LEDGER_GET_ACCOUNT_TXS,
+                                 account,
+                                 ledger_index))) {
+    NaClLog(LOG_ERROR,
+            ("Ripple ledger read via channel 0x%"NACL_PRIxPTR" with RPC "
+             NACL_RIPPLE_LEDGER_GET_ACCOUNT_TXS" failed: %d\n"),
+            (uintptr_t) &proxy_conn->client_channel,
+            srpc_error);
+    rpc->result = srpc_error;
+  } else {
+    NaClLog(3,
+            "NaClRippleLedgerServiceGetAccountTxsRpc, proxy returned\n");
+    rpc->result = NACL_SRPC_RESULT_OK;
+  }
+  (*done_cls->Run)(done_cls);
+  NaClRippleLedgerReleaseChannel_release_mu(proxy_conn);
+}
+
 struct NaClSrpcHandlerDesc const kNaClRippleLedgerServiceHandlers[] = {
   { NACL_RIPPLE_LEDGER_SERVICE_READ, NaClRippleLedgerServiceReadRpc, },
+  { NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS, NaClRippleLedgerServiceGetAccountTxsRpc, },
   { (char const *) NULL, (NaClSrpcMethod) NULL, },
 };
 

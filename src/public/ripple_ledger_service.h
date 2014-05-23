@@ -5,4 +5,8 @@
 /* ledger hash
    -> ledger data */
 
+/* Request account transactions from the specified ledger. */
+#define NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS "get_account_txs:ss:"
+/* account, ledger index */
+
 #endif /* NATIVE_CLIENT_SRC_PUBLIC_RIPPLE_LEDGER_SERVICE_H_ */

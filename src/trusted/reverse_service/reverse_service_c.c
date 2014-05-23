@@ -389,6 +389,26 @@ static void NaClReverseServiceReadRippleLedgerRpc(
   (*done_cls->Run)(done_cls);
 }
 
+static void NaClReverseServiceGetRippleAccountTxsRpc(
+    struct NaClSrpcRpc      *rpc,
+    struct NaClSrpcArg      **in_args,
+    struct NaClSrpcArg      **out_args,
+    struct NaClSrpcClosure  *done_cls) {
+  struct NaClReverseService *nrsp =
+    (struct NaClReverseService *) rpc->channel->server_instance_data;
+  char                      *account      = in_args[0]->arrays.str;
+  char                      *ledger_index = in_args[1]->arrays.str;
+  
+  UNREFERENCED_PARAMETER(out_args);
+  NaClLog(4, "Entered GetRippleAccountTxsRpc: 0x%08"NACL_PRIxPTR", %s, %s\n",
+          (uintptr_t) nrsp, account, ledger_index);
+  (*NACL_VTBL(NaClReverseInterface, nrsp->iface)->
+               GetRippleAccountTxs)(nrsp->iface, account, ledger_index);
+  NaClLog(4, "Leaving GetRippleAccountTxsRpc\n");
+  rpc->result = NACL_SRPC_RESULT_OK;
+  (*done_cls->Run)(done_cls);
+}
+
 struct NaClReverseCountingThreadInterface {
   struct NaClThreadInterface  base NACL_IS_REFCOUNT_SUBCLASS;
   struct NaClReverseService   *reverse_service;
@@ -514,6 +534,7 @@ struct NaClSrpcHandlerDesc const kNaClReverseServiceHandlers[] = {
   { NACL_MANIFEST_LOOKUP, NaClReverseServiceManifestLookupRpc, },
   { NACL_REVERSE_REQUEST_QUOTA_FOR_WRITE, NaClReverseServiceRequestQuotaForWriteRpc, },
   { NACL_RIPPLE_LEDGER_READ, NaClReverseServiceReadRippleLedgerRpc, },
+  { NACL_RIPPLE_LEDGER_GET_ACCOUNT_TXS, NaClReverseServiceGetRippleAccountTxsRpc, },
   { (char const *) NULL, (NaClSrpcMethod) NULL, },
 };
 
@@ -731,6 +752,16 @@ size_t NaClReverseInterfaceReadRippleLedger(
   return 0;
 }
 
+void NaClReverseInterfaceGetRippleAccountTxs(
+    struct NaClReverseInterface   *self,
+    char const                    *account,
+    char const                    *ledger_index) {
+  NaClLog(3,
+          ("NaClReverseInterfaceGetRippleAccountTxs(0x%08"NACL_PRIxPTR
+           ", %s, %s)\n"),
+          (uintptr_t) self, account, ledger_index);
+}
+
 void NaClReverseInterfaceCreateProcessFunctorResult(
     struct NaClReverseInterface *self,
     void (*result_functor)(void *functor_state,
@@ -767,4 +798,5 @@ struct NaClReverseInterfaceVtbl const kNaClReverseInterfaceVtbl = {
   NaClReverseInterfaceFinalizeProcess,
   NaClReverseInterfaceRequestQuotaForWrite,
   NaClReverseInterfaceReadRippleLedger,
+  NaClReverseInterfaceGetRippleAccountTxs,
 };

@@ -74,6 +74,10 @@ class ReverseEmulate : public nacl::ReverseInterface {
   virtual bool ReadRippleLedger(nacl::string ledger_hash,
                                 nacl::string* ledger_data);
 
+  // Request Ripple account transactions for specified ledger.
+  virtual void GetRippleAccountTxs(nacl::string account,
+                                   nacl::string ledger_index);
+
   // covariant impl of Ref()
   ReverseEmulate* Ref() {  // down_cast
     return reinterpret_cast<ReverseEmulate*>(RefCountBase::Ref());
@@ -404,6 +408,19 @@ bool ReverseEmulate::ReadRippleLedger(nacl::string ledger_hash,
   
   *ledger_data = "Hello Ripple Ledger!";
   return true;
+}
+
+void ReverseEmulate::GetRippleAccountTxs(nacl::string account,
+                                         nacl::string ledger_index) {
+  NaClLog(1, "ReverseEmulate::GetRippleAccountTxs\n");
+  if (account.empty() || ledger_index.empty()) {
+    NaClLog(LOG_ERROR,
+            "ReverseEmulate::GetRippleAccountTxs:"
+            " missing data\n");
+    return;
+  }
+  
+  printf("Let's get some account transactions!\n");
 }
 
 int32_t ReverseEmulate::ReserveProcessSlot() {
