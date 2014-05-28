@@ -76,14 +76,17 @@ class ReverseEmulate : public nacl::ReverseInterface {
 
   // Request Ripple account transactions for specified ledger.
   virtual void GetRippleAccountTxs(nacl::string account,
-                                   nacl::string ledger_index);
+                                   int          ledger_index,
+                                   nacl::string callback);
 
   // Submit Ripple payment transaction.
   virtual void SubmitRipplePaymentTx(nacl::string account,
                                      nacl::string secret,
                                      nacl::string recipient,
                                      nacl::string amount,
-                                     nacl::string currency);
+                                     nacl::string currency,
+                                     nacl::string issuer,
+                                     nacl::string callback);
 
   // covariant impl of Ref()
   ReverseEmulate* Ref() {  // down_cast
@@ -418,9 +421,11 @@ bool ReverseEmulate::ReadRippleLedger(nacl::string ledger_hash,
 }
 
 void ReverseEmulate::GetRippleAccountTxs(nacl::string account,
-                                         nacl::string ledger_index) {
+                                         int          ledger_index,
+                                         nacl::string callback) {
+  UNREFERENCED_PARAMETER(ledger_index);
   NaClLog(1, "ReverseEmulate::GetRippleAccountTxs\n");
-  if (account.empty() || ledger_index.empty()) {
+  if (account.empty() || callback.empty()) {
     NaClLog(LOG_ERROR,
             "ReverseEmulate::GetRippleAccountTxs:"
             " missing data\n");
@@ -434,10 +439,17 @@ void ReverseEmulate::SubmitRipplePaymentTx(nacl::string account,
                                            nacl::string secret,
                                            nacl::string recipient,
                                            nacl::string amount,
-                                           nacl::string currency) {
+                                           nacl::string currency,
+                                           nacl::string issuer,
+                                           nacl::string callback) {
+  /* currency, issuer, and callback are optional parameters. */
+  UNREFERENCED_PARAMETER(currency);
+  UNREFERENCED_PARAMETER(issuer);
+  UNREFERENCED_PARAMETER(callback);
+
   NaClLog(1, "ReverseEmulate::SubmitRipplePaymentTx\n");
   if (account.empty() || secret.empty() || recipient.empty() || 
-      amount.empty() || currency.empty()) {
+      amount.empty()) {
     NaClLog(LOG_ERROR,
             "ReverseEmulate::SubmitRipplePaymentTx:"
             " missing data\n");

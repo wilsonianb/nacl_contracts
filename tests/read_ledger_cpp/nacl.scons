@@ -1,0 +1,31 @@
+# -*- python -*-
+
+Import('env')
+
+read_ledger_cpp_libs = ['srpc', 'platform', 'gio', 'imc', 'imc_syscalls', 'jsoncpp']
+
+read_ledger_cpp_obj = env.ComponentObject('read_ledger_cpp.o', 'read_ledger_cpp.cpp')
+read_ledger_cpp_nexe_name = 'read_ledger_cpp%s' % env.get('TARGET_FULLARCH')
+read_ledger_cpp_nexe = env.ComponentProgram(read_ledger_cpp_nexe_name,
+                                             read_ledger_cpp_obj,
+                                             EXTRA_LIBS=read_ledger_cpp_libs + [
+                                              '${PTHREAD_LIBS}'])
+
+env.Publish(read_ledger_cpp_nexe_name, 'run',
+            ['read_ledger_cpp.html',
+             'read_ledger_cpp_data.html'])
+
+read_ledger_cpp_nonbrowser = env.ComponentProgram('read_ledger_cpp_nonbrowser',
+                                           read_ledger_cpp_obj,
+                                           EXTRA_LIBS=read_ledger_cpp_libs + [
+                                               '${PTHREAD_LIBS}',
+                                               '${NONIRT_LIBS}'])
+
+node = env.SelUniversalTest(
+    'read_ledger_cpp_test.out',
+    read_ledger_cpp_nonbrowser,
+    stdout_golden=env.File('read_ledger_cpp_test.stdout'),
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests'],
+                       'run_read_ledger_cpp_test')

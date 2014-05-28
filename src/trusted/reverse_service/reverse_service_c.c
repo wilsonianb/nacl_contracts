@@ -396,14 +396,15 @@ static void NaClReverseServiceGetRippleAccountTxsRpc(
     struct NaClSrpcClosure  *done_cls) {
   struct NaClReverseService *nrsp =
     (struct NaClReverseService *) rpc->channel->server_instance_data;
-  char                      *account      = in_args[0]->arrays.str;
-  char                      *ledger_index = in_args[1]->arrays.str;
+  char  *account     = in_args[0]->arrays.str;
+  int   ledger_index = in_args[1]->u.ival;
+  char  *callback    = in_args[2]->arrays.str;
   
   UNREFERENCED_PARAMETER(out_args);
-  NaClLog(4, "Entered GetRippleAccountTxsRpc: 0x%08"NACL_PRIxPTR", %s, %s\n",
-          (uintptr_t) nrsp, account, ledger_index);
+  NaClLog(4, "Entered GetRippleAccountTxsRpc: 0x%08"NACL_PRIxPTR", %s, %d, %s\n",
+          (uintptr_t) nrsp, account, ledger_index, callback);
   (*NACL_VTBL(NaClReverseInterface, nrsp->iface)->
-               GetRippleAccountTxs)(nrsp->iface, account, ledger_index);
+               GetRippleAccountTxs)(nrsp->iface, account, ledger_index, callback);
   NaClLog(4, "Leaving GetRippleAccountTxsRpc\n");
   rpc->result = NACL_SRPC_RESULT_OK;
   (*done_cls->Run)(done_cls);
@@ -421,13 +422,17 @@ static void NaClReverseServiceSubmitRipplePaymentTxRpc(
   char *recipient = in_args[2]->arrays.str;
   char *amount    = in_args[3]->arrays.str;
   char *currency  = in_args[4]->arrays.str;
+  char *issuer    = in_args[5]->arrays.str;
+  char *callback  = in_args[6]->arrays.str;
   
   UNREFERENCED_PARAMETER(out_args);
-  NaClLog(4, "Entered SubmitRipplePaymentTxRpc: 0x%08"NACL_PRIxPTR", %s, %s, %s, %s, %s\n",
-          (uintptr_t) nrsp, account, secret, recipient, amount, currency);
+  NaClLog(4, "Entered SubmitRipplePaymentTxRpc: 0x%08"NACL_PRIxPTR",\
+              %s, %s, %s, %s, %s, %s, %s\n",
+          (uintptr_t) nrsp, account, secret, recipient, amount,
+          currency, issuer, callback);
   (*NACL_VTBL(NaClReverseInterface, nrsp->iface)->
                SubmitRipplePaymentTx)(nrsp->iface,
-               account, secret, recipient, amount, currency);
+               account, secret, recipient, amount, currency, issuer, callback);
   NaClLog(4, "Leaving SubmitRipplePaymentTxRpc\n");
   rpc->result = NACL_SRPC_RESULT_OK;
   (*done_cls->Run)(done_cls);
@@ -780,11 +785,12 @@ size_t NaClReverseInterfaceReadRippleLedger(
 void NaClReverseInterfaceGetRippleAccountTxs(
     struct NaClReverseInterface   *self,
     char const                    *account,
-    char const                    *ledger_index) {
+    int                           ledger_index,
+    char const                    *callback) {
   NaClLog(3,
           ("NaClReverseInterfaceGetRippleAccountTxs(0x%08"NACL_PRIxPTR
-           ", %s, %s)\n"),
-          (uintptr_t) self, account, ledger_index);
+           ", %s, %d, %s)\n"),
+          (uintptr_t) self, account, ledger_index, callback);
 }
 
 void NaClReverseInterfaceSubmitRipplePaymentTx(
@@ -793,11 +799,14 @@ void NaClReverseInterfaceSubmitRipplePaymentTx(
     char const                    *secret,
     char const                    *recipient,
     char const                    *amount,
-    char const                    *currency) {
+    char const                    *currency,
+    char const                    *issuer,
+    char const                    *callback) {
   NaClLog(3,
           ("NaClReverseInterfaceSubmitRipplePaymentTx(0x%08"NACL_PRIxPTR
-           ", %s, %s, %s, %s, %s)\n"),
-          (uintptr_t) self, account, secret, recipient, amount, currency);
+           ", %s, %s, %s, %s, %s, %s, %s\n"),
+          (uintptr_t) self, account, secret, recipient, amount,
+          currency, issuer, callback);
 }
 
 

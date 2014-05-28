@@ -200,12 +200,14 @@ size_t ReadRippleLedger(NaClReverseInterface* self,
 
 void GetRippleAccountTxs(NaClReverseInterface* self,
                          char const* account,
-                         char const* ledger_index) {
+                         int         ledger_index,
+                         char const* callback) {
   ReverseInterfaceWrapper* wrapper =
       reinterpret_cast<ReverseInterfaceWrapper*>(self);
 
   wrapper->iface->GetRippleAccountTxs(nacl::string(account), 
-                                      nacl::string(ledger_index));
+                                      ledger_index,
+                                      nacl::string(callback));
 }
 
 void SubmitRipplePaymentTx(NaClReverseInterface* self,
@@ -213,7 +215,9 @@ void SubmitRipplePaymentTx(NaClReverseInterface* self,
                               char const* secret,
                               char const* recipient,
                               char const* amount,
-                              char const* currency) {
+                              char const* currency,
+                              char const* issuer,
+                              char const* callback) {
   ReverseInterfaceWrapper* wrapper =
       reinterpret_cast<ReverseInterfaceWrapper*>(self);
 
@@ -221,7 +225,9 @@ void SubmitRipplePaymentTx(NaClReverseInterface* self,
                                         nacl::string(secret),
                                         nacl::string(recipient),
                                         nacl::string(amount), 
-                                        nacl::string(currency));
+                                        nacl::string(currency),
+                                        nacl::string(issuer),
+                                        nacl::string(callback));
 }
 
 void ReverseInterfaceWrapperDtor(NaClRefCount* vself) {
