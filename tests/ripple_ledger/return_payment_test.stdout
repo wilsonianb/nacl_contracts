@@ -1,0 +1,11 @@
+rpc call initiated new_ledger:s:
+input 0:  s("{\"fee_base\":10,\"fee_ref\":10,\"ledger_hash\":\"D01692280FA2EC56A065AD12373FC782A030AE0BC9DB3C51058A6C3334E76CCA\",\"ledger_index\":6902147,\"ledger_time\":454697770,\"reserve_base\":20000000,\"reserve_inc\":5000000,\"txn_count\":3,\"type\":\"ledgerClosed\",\"validated_ledgers\":\"32570-6902147\"}")
+Got ripple ledger service descriptor 10
+Got ripple ledger connection 11
+Let's get some account transactions!
+rpc call complete new_ledger:s:
+
+rpc call initiated new_ledger:s:
+input 0:  s("{\"fee_base\":10,\"fee_ref\":10,\"ledger_hash\":\"D01692280FA2EC56A065AD12373FC782A030AE0BC9DB3C51058A6C3334E76CCA\",\"ledger_index\":6902147,\"ledger_time\":454697770,\"reserve_base\":20000000,\"reserve_inc\":5000000,\"txn_count\":3,\"type\":\"ledgerClosed\",\"validated_ledgers\":\"32570-6902147\"}")
+rpc call complete new_transaction:s:
+

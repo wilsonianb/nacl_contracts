@@ -3214,8 +3214,7 @@ irt_variant_tests = [
     'tests/pnacl_abi/nacl.scons',
     'tests/pnacl_native_objects/nacl.scons',
     'tests/process_create/nacl.scons',
-    'tests/read_ledger_cpp/nacl.scons',
-    'tests/read_ledger_srpc/nacl.scons',
+    'tests/ripple_ledger/nacl.scons',
     'tests/redir/nacl.scons',
     'tests/rodata_not_writable/nacl.scons',
     'tests/run_py/nacl.scons',
@@ -3270,7 +3269,6 @@ nonvariant_tests = [
     'tests/gold_plugin/nacl.scons',
     'tests/imc_sockets/nacl.scons',
     'tests/minnacl/nacl.scons',
-    'tests/read_ledger/nacl.scons',
     'tests/multiple_sandboxes/nacl.scons',
     # Potential issue with running them:
     # http://code.google.com/p/nativeclient/issues/detail?id=2092

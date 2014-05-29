@@ -1,0 +1,31 @@
+# -*- python -*-
+
+Import('env')
+
+return_payment_libs = ['srpc', 'platform', 'gio', 'imc', 'imc_syscalls', 'jsoncpp']
+
+return_payment_obj = env.ComponentObject('return_payment.o', 'return_payment.cc')
+return_payment_nexe_name = 'return_payment%s' % env.get('TARGET_FULLARCH')
+return_payment_nexe = env.ComponentProgram(return_payment_nexe_name,
+                                           return_payment_obj,
+                                           EXTRA_LIBS=return_payment_libs + [
+                                               '${PTHREAD_LIBS}'])
+
+env.Publish(return_payment_nexe_name, 'run',
+            ['return_payment.html',
+             'return_payment_data.html'])
+
+return_payment_nonbrowser = env.ComponentProgram('return_payment_nonbrowser',
+                                                 return_payment_obj,
+                                                 EXTRA_LIBS=return_payment_libs + [
+                                                     '${PTHREAD_LIBS}',
+                                                     '${NONIRT_LIBS}'])
+
+node = env.SelUniversalTest(
+    'return_payment_test.out',
+    return_payment_nonbrowser,
+    stdout_golden=env.File('return_payment_test.stdout'),
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests'],
+                       'run_return_payment_test')

@@ -1,5 +1,5 @@
 /*
- * Simple test for reading Ripple ledger using simple rpc.
+ * Ripple "contract" that returns XRP or USD payments.
  */
 
 #include <assert.h>
@@ -9,6 +9,7 @@
 #include <sys/fcntl.h>
 #include <string.h>
 #include <unistd.h>
+#include <json/reader.h>
 
 #include "native_client/src/public/imc_syscalls.h"
 #include "native_client/src/public/name_service.h"
@@ -17,8 +18,9 @@
 
 NaClSrpcChannel ns_channel;
 
-const char *account = "Insert contract's ripple address here";
-const char *secret  = "Insert contract's secret key here";
+const char *ACCOUNT    = "Insert contract's ripple address here";
+const char *SECRET     = "Insert contract's secret key here";
+const char *USD_ISSUER = "Insert trusted USD issuer address here";
 
 int ConnectToRippleLedgerService (NaClSrpcChannel* ledger_channel) {
   int ledger;
@@ -59,18 +61,28 @@ void HandleLedger(NaClSrpcRpc *rpc,
                   NaClSrpcArg **in_args,
                   NaClSrpcArg **out_args,
                   NaClSrpcClosure *done) {
-  //const char *ledger_hash = (const char*) in_args[0]->arrays.str;
-  const char *ledger_index = (const char*) in_args[1]->arrays.str;
+  const char *ledger_json = (const char*) in_args[0]->arrays.str;
+  Json::Reader reader;
+  Json::Value ledger_root;
   NaClSrpcChannel ledger_channel;
-
+  
+  if ((!reader.parse(ledger_json, ledger_root))) {
+    fprintf(stderr, "Error parsing ledger json.\n");
+    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+    goto done;
+  }
+  
   if (!ConnectToRippleLedgerService(&ledger_channel)) {
     rpc->result = NACL_SRPC_RESULT_APP_ERROR;
     goto done;
   }
 
   if (NACL_SRPC_RESULT_OK !=
-      NaClSrpcInvokeBySignature(&ledger_channel, NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS,
-                                account, ledger_index)) {
+      NaClSrpcInvokeBySignature(&ledger_channel,
+                                NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS,
+                                ACCOUNT,
+                                ledger_root["ledger_index"].asInt(),
+                                "new_transaction:s:")) {
     fprintf(stderr, "NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS failed\n");
     rpc->result = NACL_SRPC_RESULT_APP_ERROR;
     goto done;
@@ -85,7 +97,60 @@ void HandleTransaction(NaClSrpcRpc *rpc,
                        NaClSrpcArg **out_args,
                        NaClSrpcClosure *done) {
   NaClSrpcChannel ledger_channel;
-  const char *sender = "address that just sent the contract money";
+  const std::string transaction_json = in_args[0]->arrays.str;
+  const char *dummy_callback = "";
+  Json::Reader reader;
+  Json::Value tx_root;
+  const char *amount;
+  const char *currency;
+  const char *issuer;
+
+  /* Reciprocate payment transactions sent to the contract account. */
+  if ((!reader.parse(transaction_json, tx_root))) {
+    fprintf(stderr, "Error parsing transaction json.\n");
+    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+    goto done;
+  }
+
+  /* Only handle "Payment" transactions to the contract account. */
+  if (!tx_root["TransactionType"].isString() || tx_root["TransactionType"].asString()!="Payment" ||
+      !tx_root["Destination"].isString() || strcmp(tx_root["Destination"].asCString(), ACCOUNT)!=0 ||
+      !tx_root["Account"].isString()) {
+    rpc->result = NACL_SRPC_RESULT_OK;
+    goto done;
+  }
+
+  /* For XRP payments, "Amount" is a single string.
+     For payments in other currencies, "Amount" is an object with a currency, issuer, and value. */
+  if (tx_root["Amount"].empty()) {
+    fprintf(stderr, "Missing transaction amount data.\n");
+    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+    goto done;
+  }
+  
+  /* XRP transaction */
+  else if (tx_root["Amount"].isString()) {
+    amount   = tx_root["Amount"].asCString();
+    currency = "";
+    issuer   = "";
+  }
+
+  /* USD transaction */
+  else if (tx_root["Amount"]["currency"].isString() && tx_root["Amount"]["currency"].asString()=="USD") {
+    if (!tx_root["Amount"]["value"].isString()) {
+      fprintf(stderr, "Missing transaction amount data.\n");
+      rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+      goto done;
+    }
+    
+    amount   = tx_root["Amount"]["value"].asCString();
+    currency = "USD";
+    issuer   = USD_ISSUER;
+  }
+  else {
+    rpc->result = NACL_SRPC_RESULT_OK;
+    goto done;
+  }
 
   if (!ConnectToRippleLedgerService(&ledger_channel)) {
     rpc->result = NACL_SRPC_RESULT_APP_ERROR;
@@ -93,15 +158,19 @@ void HandleTransaction(NaClSrpcRpc *rpc,
   }
 
   if (NACL_SRPC_RESULT_OK !=
-      NaClSrpcInvokeBySignature(&ledger_channel, NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX,
-                                account, secret, sender, "5XRP", "5XRP")) {
+      NaClSrpcInvokeBySignature(&ledger_channel,
+                                NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX,
+                                ACCOUNT,
+                                SECRET,
+                                tx_root["Account"].asCString(),
+                                amount, 
+                                currency,
+                                issuer,
+                                dummy_callback)) {
     fprintf(stderr, "NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX failed\n");
     rpc->result = NACL_SRPC_RESULT_APP_ERROR;
     goto done;
   }
-
-  //UNREFERENCED_PARAMETER(in_args);
-  //UNREFERENCED_PARAMETER(out_args);
 
   rpc->result = NACL_SRPC_RESULT_OK;
  done:
@@ -109,7 +178,7 @@ void HandleTransaction(NaClSrpcRpc *rpc,
 }
 
 const struct NaClSrpcHandlerDesc srpc_methods[] = {
-  { "new_ledger:ss:", HandleLedger },
+  { "new_ledger:s:", HandleLedger },
   { "new_transaction:s:", HandleTransaction },
   { NULL, NULL },
 };
