@@ -76,7 +76,8 @@ class ReverseEmulate : public nacl::ReverseInterface {
 
   // Request Ripple account transactions for specified ledger.
   virtual void GetRippleAccountTxs(nacl::string account,
-                                   int          ledger_index,
+                                   int          ledger_index_min,
+                                   int          ledger_index_max,
                                    nacl::string callback);
 
   // Submit Ripple payment transaction.
@@ -421,9 +422,11 @@ bool ReverseEmulate::ReadRippleLedger(nacl::string ledger_hash,
 }
 
 void ReverseEmulate::GetRippleAccountTxs(nacl::string account,
-                                         int          ledger_index,
+                                         int          ledger_index_min,
+                                         int          ledger_index_max,
                                          nacl::string callback) {
-  UNREFERENCED_PARAMETER(ledger_index);
+  UNREFERENCED_PARAMETER(ledger_index_min);
+  UNREFERENCED_PARAMETER(ledger_index_max);
   NaClLog(1, "ReverseEmulate::GetRippleAccountTxs\n");
   if (account.empty() || callback.empty()) {
     NaClLog(LOG_ERROR,

@@ -396,15 +396,17 @@ static void NaClReverseServiceGetRippleAccountTxsRpc(
     struct NaClSrpcClosure  *done_cls) {
   struct NaClReverseService *nrsp =
     (struct NaClReverseService *) rpc->channel->server_instance_data;
-  char  *account     = in_args[0]->arrays.str;
-  int   ledger_index = in_args[1]->u.ival;
-  char  *callback    = in_args[2]->arrays.str;
+  char  *account         = in_args[0]->arrays.str;
+  int   ledger_index_min = in_args[1]->u.ival;
+  int   ledger_index_max = in_args[2]->u.ival;
+  char  *callback        = in_args[3]->arrays.str;
   
   UNREFERENCED_PARAMETER(out_args);
-  NaClLog(4, "Entered GetRippleAccountTxsRpc: 0x%08"NACL_PRIxPTR", %s, %d, %s\n",
-          (uintptr_t) nrsp, account, ledger_index, callback);
+  NaClLog(4, "Entered GetRippleAccountTxsRpc: 0x%08"NACL_PRIxPTR", %s, %d, %d, %s\n",
+          (uintptr_t) nrsp, account, ledger_index_min, ledger_index_max, callback);
   (*NACL_VTBL(NaClReverseInterface, nrsp->iface)->
-               GetRippleAccountTxs)(nrsp->iface, account, ledger_index, callback);
+               GetRippleAccountTxs)(nrsp->iface, account, ledger_index_min,
+                                    ledger_index_max, callback);
   NaClLog(4, "Leaving GetRippleAccountTxsRpc\n");
   rpc->result = NACL_SRPC_RESULT_OK;
   (*done_cls->Run)(done_cls);
@@ -785,12 +787,13 @@ size_t NaClReverseInterfaceReadRippleLedger(
 void NaClReverseInterfaceGetRippleAccountTxs(
     struct NaClReverseInterface   *self,
     char const                    *account,
-    int                           ledger_index,
+    int                           ledger_index_min,
+    int                           ledger_index_max,
     char const                    *callback) {
   NaClLog(3,
           ("NaClReverseInterfaceGetRippleAccountTxs(0x%08"NACL_PRIxPTR
-           ", %s, %d, %s)\n"),
-          (uintptr_t) self, account, ledger_index, callback);
+           ", %s, %d, %d %s)\n"),
+          (uintptr_t) self, account, ledger_index_min, ledger_index_max, callback);
 }
 
 void NaClReverseInterfaceSubmitRipplePaymentTx(

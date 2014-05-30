@@ -91,9 +91,10 @@ static void NaClRippleLedgerServiceGetAccountTxsRpc(
     struct NaClSrpcClosure  *done_cls) {
   struct NaClRippleLedgerServiceConnection  *proxy_conn =
       (struct NaClRippleLedgerServiceConnection *) rpc->channel->server_instance_data;
-  char  *account      = in_args[0]->arrays.str;
-  int   ledger_index  = in_args[1]->u.ival;
-  char  *callback     = in_args[2]->arrays.str;
+  char  *account          = in_args[0]->arrays.str;
+  int   ledger_index_min  = in_args[1]->u.ival;
+  int   ledger_index_max  = in_args[2]->u.ival;
+  char  *callback         = in_args[3]->arrays.str;
   NaClSrpcError srpc_error;
 
   UNREFERENCED_PARAMETER(out_args);
@@ -110,7 +111,8 @@ static void NaClRippleLedgerServiceGetAccountTxsRpc(
        NaClSrpcInvokeBySignature(&proxy_conn->client_channel,
                                  NACL_RIPPLE_LEDGER_GET_ACCOUNT_TXS,
                                  account,
-                                 ledger_index,
+                                 ledger_index_min,
+                                 ledger_index_max,
                                  callback))) {
     NaClLog(LOG_ERROR,
             ("Ripple ledger read via channel 0x%"NACL_PRIxPTR" with RPC "

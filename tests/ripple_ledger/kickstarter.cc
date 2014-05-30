@@ -1,5 +1,6 @@
 /*
- * Ripple "contract" that returns XRP or USD payments.
+ * Ripple kickstarter "contract".
+ * Returns payments if goal is not reached by deadline.
  */
 
 #include <assert.h>
@@ -9,6 +10,7 @@
 #include <sys/fcntl.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 #include <json/reader.h>
 
 #include "native_client/src/public/imc_syscalls.h"
@@ -17,6 +19,16 @@
 #include "native_client/src/public/ripple_ledger_service.h"
 
 NaClSrpcChannel ns_channel;
+
+bool campaign_active = false;
+int  start_ledger_index;
+
+/* Ripple time is seconds since 1/1/2000 00:00:00 UTC epoch.
+   This is equal to Unix timestamp minus 946684800. */
+const long START_TIME = 454786200;  //2014-05-30 17:30:00
+const long END_TIME = 454786500 ;   //2014-05-30 17:35:00
+
+const double USD_GOAL = 10;
 
 const char *ACCOUNT    = "Insert contract's ripple address here";
 const char *SECRET     = "Insert contract's secret key here";
@@ -64,7 +76,7 @@ void HandleLedger(NaClSrpcRpc *rpc,
   const char *ledger_json = (const char*) in_args[0]->arrays.str;
   Json::Reader reader;
   Json::Value ledger_root;
-  int ledger_index;
+  long ledger_time;
   NaClSrpcChannel ledger_channel;
   
   if ((!reader.parse(ledger_json, ledger_root))) {
@@ -73,24 +85,34 @@ void HandleLedger(NaClSrpcRpc *rpc,
     goto done;
   }
   
-  ledger_index = ledger_root["ledger_index"].asInt();
-
-  if (!ConnectToRippleLedgerService(&ledger_channel)) {
-    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
-    goto done;
+  ledger_time = ledger_root["ledger_time"].asInt64();
+  if (!campaign_active && ledger_time>START_TIME &&
+      ledger_time<END_TIME) {
+    campaign_active = true;
+    start_ledger_index = ledger_root["ledger_index"].asInt();
   }
 
-  if (NACL_SRPC_RESULT_OK !=
-      NaClSrpcInvokeBySignature(&ledger_channel,
-                                NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS,
-                                ACCOUNT,
-                                ledger_index,
-                                ledger_index,
-                                "new_transactions:s:")) {
-    fprintf(stderr, "NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS failed\n");
-    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
-    goto done;
+  else if (campaign_active && ledger_time>=END_TIME) {
+    campaign_active = false;
+
+    if (!ConnectToRippleLedgerService(&ledger_channel)) {
+      rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+      goto done;
+    }
+
+    if (NACL_SRPC_RESULT_OK !=
+        NaClSrpcInvokeBySignature(&ledger_channel,
+                                  NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS,
+                                  ACCOUNT,
+                                  start_ledger_index,
+                                  ledger_root["ledger_index"].asInt(),
+                                  "handle_txs:s:")) {
+      fprintf(stderr, "NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS failed\n");
+      rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+      goto done;
+    }
   }
+
   rpc->result = NACL_SRPC_RESULT_OK;
  done:
   done->Run(done);
@@ -103,14 +125,19 @@ void HandleTransactions(NaClSrpcRpc *rpc,
   NaClSrpcChannel ledger_channel;
   const std::string transactions_json = in_args[0]->arrays.str;
   const char *dummy_callback = "";
+  const char *currency = "USD";
   Json::Reader reader;
   Json::Value txs_root;
   Json::Value tx;
-  const char *amount;
-  const char *currency;
-  const char *issuer;
+  std::vector<uint> valid_txs;
+  double campaign_total=0;
 
   rpc->result = NACL_SRPC_RESULT_OK;
+
+  if (!ConnectToRippleLedgerService(&ledger_channel)) {
+    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+    goto done;
+  }
 
   /* Reciprocate payment transactions sent to the contract account. */
   if ((!reader.parse(transactions_json, txs_root))) {
@@ -119,76 +146,75 @@ void HandleTransactions(NaClSrpcRpc *rpc,
     goto done;
   }
 
-  if (!ConnectToRippleLedgerService(&ledger_channel)) {
-    rpc->result = NACL_SRPC_RESULT_APP_ERROR;
-    goto done;
-  }
-
+  /* Count how much USD the contract account 
+     received in payments during the campaign.
+     Record the indices of valid transactions. */
   for (uint i=0; i<txs_root.size(); ++i) {
-
     if (txs_root[i]["tx"].empty()) { continue; }
     tx = txs_root[i]["tx"];
 
-    /* Only handle "Payment" transactions to the contract account. */
+    /* Only handle USD "Payment" transactions to the contract account.
+       For USD payments, "Amount" is an object with a currency, issuer, and value. */
     if (!tx["TransactionType"].isString() || 
         tx["TransactionType"].asString()!="Payment" ||
         !tx["Destination"].isString() || 
         strcmp(tx["Destination"].asCString(), ACCOUNT)!=0 ||
-        !tx["Account"].isString()) {
+        !tx["Account"].isString() ||
+        !tx["Amount"].isObject()) {
       continue;
     }
 
-    /* For XRP payments, "Amount" is a single string.
-       For payments in other currencies, "Amount" is an object with a currency, issuer, and value. */
-    if (tx["Amount"].empty()) {
-      fprintf(stderr, "Missing transaction amount data.\n");
-      continue;
-    }
-
-    /* XRP transaction */
-    else if (tx["Amount"].isString()) {
-      amount   = tx["Amount"].asCString();
-      currency = "";
-      issuer   = "";
-    }
-
-    /* USD transaction */
-    else if (tx["Amount"]["currency"].isString() && tx["Amount"]["currency"].asString()=="USD") {
+    if (tx["Amount"]["currency"].isString() && tx["Amount"]["currency"].asString()=="USD") {
       if (!tx["Amount"]["value"].isString()) {
         fprintf(stderr, "Missing transaction amount data.\n");
         rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+        continue;
       }
     
-      amount   = tx["Amount"]["value"].asCString();
-      currency = "USD";
-      issuer   = USD_ISSUER;
-    }
-    else {
-      continue;
-    }
+      /* Count the backer's payment. */
+      campaign_total += atof(tx["Amount"]["value"].asCString());
 
-    if (NACL_SRPC_RESULT_OK !=
-        NaClSrpcInvokeBySignature(&ledger_channel,
-                                  NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX,
-                                  ACCOUNT,
-                                  SECRET,
-                                  tx["Account"].asCString(),
-                                  amount, 
-                                  currency,
-                                  issuer,
-                                  dummy_callback)) {
-      fprintf(stderr, "NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX failed\n");
-      rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+      /* Record the transaction index. */
+      valid_txs.push_back (i);
     }
   }
-  
+
+  printf ("campaign_total: %f\n", campaign_total);
+
+  /* Campaign funded. Do nothing. */
+  if (campaign_total>=USD_GOAL) {
+    printf("Campaign funded!\n");
+  }
+
+  /* Campaign failed to meet goal.
+     Return funds to backers. */
+  else {
+    for (std::vector<uint>::iterator iTx=valid_txs.begin(); iTx!=valid_txs.end(); ++iTx) {
+      tx = txs_root[*iTx]["tx"]; 
+
+      if (NACL_SRPC_RESULT_OK !=
+          NaClSrpcInvokeBySignature(&ledger_channel,
+                                    NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX,
+                                    ACCOUNT,
+                                    SECRET,
+                                    tx["Account"].asCString(),
+                                    tx["Amount"]["value"].asCString(),
+                                    currency,
+                                    USD_ISSUER,
+                                    dummy_callback)) {
+        fprintf(stderr, "NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX failed\n");
+        rpc->result = NACL_SRPC_RESULT_APP_ERROR;
+      }
+    }
+  }
+
  done:
   done->Run(done);
 }
 
 const struct NaClSrpcHandlerDesc srpc_methods[] = {
   { "new_ledger:s:", HandleLedger },
-  { "new_transactions:s:", HandleTransactions },
+  { "handle_txs:s:", HandleTransactions },
   { NULL, NULL },
 };
 
@@ -199,7 +225,7 @@ int main(void) {
   if (!NaClSrpcModuleInit()) {
     return 1;
   }
-  
+
   ns = -1;
   nacl_nameservice(&ns);
   if (ns==-1) {

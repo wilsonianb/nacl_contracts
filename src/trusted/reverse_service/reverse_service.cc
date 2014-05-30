@@ -200,13 +200,15 @@ size_t ReadRippleLedger(NaClReverseInterface* self,
 
 void GetRippleAccountTxs(NaClReverseInterface* self,
                          char const* account,
-                         int         ledger_index,
+                         int         ledger_index_min,
+                         int         ledger_index_max,
                          char const* callback) {
   ReverseInterfaceWrapper* wrapper =
       reinterpret_cast<ReverseInterfaceWrapper*>(self);
 
   wrapper->iface->GetRippleAccountTxs(nacl::string(account), 
-                                      ledger_index,
+                                      ledger_index_min,
+                                      ledger_index_max,
                                       nacl::string(callback));
 }
 

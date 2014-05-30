@@ -200,7 +200,8 @@ struct NaClReverseInterfaceVtbl {
   void                          (*GetRippleAccountTxs)(
       struct NaClReverseInterface  *self,
       char const                   *account,
-      int                          ledger_index,
+      int                          ledger_index_min,
+      int                          ledger_index_max,
       char const                   *callback);
 
   /*
@@ -277,7 +278,8 @@ size_t NaClReverseInterfaceReadRippleLedger(
 void NaClReverseInterfaceGetRippleAccountTxs(
     struct NaClReverseInterface   *self,
     char const                    *account,
-    int                           ledger_index,
+    int                           ledger_index_min,
+    int                           ledger_index_max,
     char const                    *callback);
 
 void NaClReverseInterfaceSubmitRipplePaymentTx(

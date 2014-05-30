@@ -6,8 +6,8 @@
    -> ledger data */
 
 /* Request account transactions from the specified ledger. */
-#define NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS "get_account_txs:sis:"
-/* account, ledger index, callback */
+#define NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS "get_account_txs:siis:"
+/* account, ledger_index_min, ledger_index_max, callback */
 
 /* Submit payment transaction. */
 #define NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX "submit_payment_tx:sssssss:"

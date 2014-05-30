@@ -29,3 +29,31 @@ node = env.SelUniversalTest(
 env.AddNodeToTestSuite(node,
                        ['small_tests'],
                        'run_return_payment_test')
+
+kickstarter_libs = ['srpc', 'platform', 'gio', 'imc', 'imc_syscalls', 'jsoncpp']
+
+kickstarter_obj = env.ComponentObject('kickstarter.o', 'kickstarter.cc')
+kickstarter_nexe_name = 'kickstarter%s' % env.get('TARGET_FULLARCH')
+kickstarter_nexe = env.ComponentProgram(kickstarter_nexe_name,
+                                        kickstarter_obj,
+                                        EXTRA_LIBS=kickstarter_libs + [
+                                            '${PTHREAD_LIBS}'])
+
+env.Publish(kickstarter_nexe_name, 'run',
+            ['kickstarter.html',
+             'kickstarter_data.html'])
+
+kickstarter_nonbrowser = env.ComponentProgram('kickstarter_nonbrowser',
+                                              kickstarter_obj,
+                                              EXTRA_LIBS=kickstarter_libs + [
+                                                  '${PTHREAD_LIBS}',
+                                                  '${NONIRT_LIBS}'])
+
+node = env.SelUniversalTest(
+    'kickstarter_test.out',
+    kickstarter_nonbrowser,
+    stdout_golden=env.File('kickstarter_test.stdout'),
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests'],
+                       'run_kickstarter_test')
