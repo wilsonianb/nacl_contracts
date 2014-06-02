@@ -24,6 +24,9 @@ return_payment_nonbrowser = env.ComponentProgram('return_payment_nonbrowser',
 node = env.SelUniversalTest(
     'return_payment_test.out',
     return_payment_nonbrowser,
+    sel_universal_flags=['--uses_reverse_service',
+                         '--command_file',
+                         env.File('return_payment_test.stdin')],
     stdout_golden=env.File('return_payment_test.stdout'),
     )
 env.AddNodeToTestSuite(node,
@@ -52,8 +55,42 @@ kickstarter_nonbrowser = env.ComponentProgram('kickstarter_nonbrowser',
 node = env.SelUniversalTest(
     'kickstarter_test.out',
     kickstarter_nonbrowser,
+    sel_universal_flags=['--uses_reverse_service',
+                         '--command_file',
+                         env.File('kickstarter_test.stdin')],
     stdout_golden=env.File('kickstarter_test.stdout'),
     )
 env.AddNodeToTestSuite(node,
                        ['small_tests'],
                        'run_kickstarter_test')
+
+auction_escrow_libs = ['srpc', 'platform', 'gio', 'imc', 'imc_syscalls', 'jsoncpp']
+
+auction_escrow_obj = env.ComponentObject('auction_escrow.o', 'auction_escrow.cc')
+auction_escrow_nexe_name = 'auction_escrow%s' % env.get('TARGET_FULLARCH')
+auction_escrow_nexe = env.ComponentProgram(auction_escrow_nexe_name,
+                                        auction_escrow_obj,
+                                        EXTRA_LIBS=auction_escrow_libs + [
+                                            '${PTHREAD_LIBS}'])
+
+env.Publish(auction_escrow_nexe_name, 'run',
+            ['auction_escrow.html',
+             'auction_escrow_data.html'])
+
+auction_escrow_nonbrowser = env.ComponentProgram('auction_escrow_nonbrowser',
+                                              auction_escrow_obj,
+                                              EXTRA_LIBS=auction_escrow_libs + [
+                                                  '${PTHREAD_LIBS}',
+                                                  '${NONIRT_LIBS}'])
+
+node = env.SelUniversalTest(
+    'auction_escrow_test.out',
+    auction_escrow_nonbrowser,
+    sel_universal_flags=['--uses_reverse_service',
+                         '--command_file',
+                         env.File('auction_escrow_test.stdin')],
+    stdout_golden=env.File('auction_escrow_test.stdout'),
+    )
+env.AddNodeToTestSuite(node,
+                       ['small_tests'],
+                       'run_auction_escrow_test')

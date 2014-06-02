@@ -18,9 +18,11 @@
 
 NaClSrpcChannel ns_channel;
 
-const char *ACCOUNT    = "Insert contract's ripple address here";
-const char *SECRET     = "Insert contract's secret key here";
-const char *USD_ISSUER = "Insert trusted USD issuer address here";
+//Insert real values here.
+const char *ACCOUNT    = "DummyContractAddress";
+const char *SECRET     = "DummyContractSecret";
+const char *USD_ISSUER = "DummyUSDIssuer";
+
 
 int ConnectToRippleLedgerService (NaClSrpcChannel* ledger_channel) {
   int ledger;
@@ -32,17 +34,15 @@ int ConnectToRippleLedgerService (NaClSrpcChannel* ledger_channel) {
                                 &status, &ledger)) {
     fprintf(stderr, "nameservice lookup RPC failed\n");
   }
-  printf("Got ripple ledger service descriptor %d\n", ledger);
+
   if (-1 == ledger) {
     fprintf(stderr, "nameservice lookup failed: status %d\n", status);
     return 0;
   }
 
-  // connect to Ripple ledger server 
   int ledger_conn;
 
   ledger_conn = imc_connect(ledger);
-  printf("Got ripple ledger connection %d\n", ledger_conn);
   if (-1 == ledger_conn) {
     fprintf(stderr, "could not connect\n");
     return 0;
@@ -52,6 +52,7 @@ int ConnectToRippleLedgerService (NaClSrpcChannel* ledger_channel) {
     fprintf(stderr, "could not build srpc client\n");
     return 0;
   }
+
   close(ledger);
 
   return 1;

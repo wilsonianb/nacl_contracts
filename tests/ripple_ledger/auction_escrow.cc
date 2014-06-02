@@ -1,6 +1,8 @@
 /*
- * Ripple kickstarter "contract".
- * Returns payments if goal is not reached by deadline.
+ * Ripple escrow "contract" for vickrey auction.
+ * Seller is paid second highest bid from winning bidder.
+ * Return payments from non-winning bidders.
+ * Winning bid is paid to the seller.
  */
 
 #include <assert.h>
@@ -10,6 +12,7 @@
 #include <sys/fcntl.h>
 #include <string.h>
 #include <unistd.h>
+#include <tr1/unordered_map>
 #include <sstream>
 #include <json/reader.h>
 
@@ -20,21 +23,22 @@
 
 NaClSrpcChannel ns_channel;
 
-bool campaign_active = false;
+bool auction_active = false;
 int  start_ledger_index;
 
 /* Ripple time is seconds since 1/1/2000 00:00:00 UTC epoch.
    This is equal to Unix timestamp minus 946684800. */
-const long START_TIME = 454786200;
-const long END_TIME = 454786500;
+const long START_TIME = 455044551;
+const long END_TIME = 455044851;
 
-const double USD_GOAL = 10;
+const double USD_MIN_BID = 5;
 
-//Fill in actual values here.
-const char *CONTRACT_ACCOUNT = "DummyContractAddress";
-const char *CONTRACT_SECRET  = "DummyContractSecret";
-const char *USD_ISSUER       = "DummyUSDIssuer";
-const char *PROJECT_ADDRESS  = "DummyProjectAddress";
+//Insert real values here.
+const char *ESCROW_ADDRESS  = "DummyEscrowAddress";
+const char *ESCROW_SECRET   = "DummyEscrowSecret";
+const char *USD_ISSUER      = "DummyUSDIssuer";
+const char *SELLER_ADDRESS  = "DummySellerAddress";
+
 
 int ConnectToRippleLedgerService (NaClSrpcChannel* ledger_channel) {
   int ledger;
@@ -55,7 +59,6 @@ int ConnectToRippleLedgerService (NaClSrpcChannel* ledger_channel) {
   int ledger_conn;
 
   ledger_conn = imc_connect(ledger);
-
   if (-1 == ledger_conn) {
     fprintf(stderr, "could not connect\n");
     return 0;
@@ -65,6 +68,7 @@ int ConnectToRippleLedgerService (NaClSrpcChannel* ledger_channel) {
     fprintf(stderr, "could not build srpc client\n");
     return 0;
   }
+
   close(ledger);
 
   return 1;
@@ -87,14 +91,14 @@ void HandleLedger(NaClSrpcRpc *rpc,
   }
   
   ledger_time = ledger_root["ledger_time"].asInt64();
-  if (!campaign_active && ledger_time>START_TIME &&
+  if (!auction_active && ledger_time>START_TIME &&
       ledger_time<END_TIME) {
-    campaign_active = true;
+    auction_active = true;
     start_ledger_index = ledger_root["ledger_index"].asInt();
   }
 
-  else if (campaign_active && ledger_time>=END_TIME) {
-    campaign_active = false;
+  else if (auction_active && ledger_time>=END_TIME) {
+    auction_active = false;
 
     if (!ConnectToRippleLedgerService(&ledger_channel)) {
       rpc->result = NACL_SRPC_RESULT_APP_ERROR;
@@ -104,7 +108,7 @@ void HandleLedger(NaClSrpcRpc *rpc,
     if (NACL_SRPC_RESULT_OK !=
         NaClSrpcInvokeBySignature(&ledger_channel,
                                   NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS,
-                                  CONTRACT_ACCOUNT,
+                                  ESCROW_ADDRESS,
                                   start_ledger_index,
                                   ledger_root["ledger_index"].asInt(),
                                   "handle_txs:s:")) {
@@ -130,8 +134,11 @@ void HandleTransactions(NaClSrpcRpc *rpc,
   Json::Reader reader;
   Json::Value txs_root;
   Json::Value tx;
-  std::vector<uint> valid_txs;
-  double campaign_total=0;
+  std::tr1::unordered_map<std::string, double> bidder_totals; /* <bidder address, total bid> */
+  double high_bid=0;
+  double second_high_bid=0;
+  double amount;
+  std::string high_bidder_addr;
 
   rpc->result = NACL_SRPC_RESULT_OK;
 
@@ -140,16 +147,16 @@ void HandleTransactions(NaClSrpcRpc *rpc,
     goto done;
   }
 
-  /* Reciprocate payment transactions sent to the contract account. */
+  /* Return payment transactions sent to the contract account
+     from non-winning bidders. */
   if ((!reader.parse(transactions_json, txs_root))) {
     fprintf(stderr, "Error parsing transaction json.\n");
     rpc->result = NACL_SRPC_RESULT_APP_ERROR;
     goto done;
   }
 
-  /* Count how much USD the contract account 
-     received in payments during the campaign.
-     Record the indices of valid transactions. */
+  /* Count how much USD the contract account received in payments
+     from each bidder during the auction.. */
   for (uint i=0; i<txs_root.size(); ++i) {
     if (txs_root[i]["tx"].empty()) { continue; }
     tx = txs_root[i]["tx"];
@@ -159,7 +166,7 @@ void HandleTransactions(NaClSrpcRpc *rpc,
     if (!tx["TransactionType"].isString() || 
         tx["TransactionType"].asString()!="Payment" ||
         !tx["Destination"].isString() || 
-        strcmp(tx["Destination"].asCString(), CONTRACT_ACCOUNT)!=0 ||
+        strcmp(tx["Destination"].asCString(), ESCROW_ADDRESS)!=0 ||
         !tx["Account"].isString() ||
         !tx["Amount"].isObject()) {
       continue;
@@ -172,29 +179,50 @@ void HandleTransactions(NaClSrpcRpc *rpc,
         continue;
       }
     
-      /* Count the backer's payment. */
-      campaign_total += atof(tx["Amount"]["value"].asCString());
+      /* Update the bidder's total bid. */
+      std::string bidder = tx["Account"].asString();
 
-      /* Record the transaction index. */
-      valid_txs.push_back (i);
+      bidder_totals[bidder] += atof(tx["Amount"]["value"].asCString());
+      if (bidder_totals[bidder] > high_bid) {
+        if (high_bidder_addr!=bidder) {
+          high_bidder_addr = bidder;
+          second_high_bid = high_bid;
+        }
+
+        high_bid = bidder_totals[bidder];
+      }
+
+      else if (bidder_totals[bidder] > second_high_bid) {
+        second_high_bid = bidder_totals[bidder];
+      }
     }
   }
 
-  printf ("campaign_total: %f\n", campaign_total);
+  printf ("High bidder: %s\n", high_bidder_addr.c_str());
+  printf ("High bid: %f\n", high_bid);
+  printf ("second highest bid: %f\n", second_high_bid);
 
-  /* Campaign funded. Send funds to the project. */
-  if (campaign_total>=USD_GOAL) {
-    printf("Campaign funded!\n");
+  if (high_bid<USD_MIN_BID) {
+    printf("Minimum bid ($%f) not met! No sale.\n", USD_MIN_BID);
+    high_bidder_addr.clear();
+  }
 
+  else {
+
+    /* Winner must pay at least the minimum bid. */
+    if (second_high_bid<USD_MIN_BID) { second_high_bid = USD_MIN_BID; }
+    printf("Minimum bid met! Winner pays: $%f\n", second_high_bid);
+
+    /* Pay the seller the second highest bid. */
     std::ostringstream amount_str;
-    amount_str << campaign_total;
+    amount_str << second_high_bid;
 
     if (NACL_SRPC_RESULT_OK !=
         NaClSrpcInvokeBySignature(&ledger_channel,
                                   NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX,
-                                  CONTRACT_ACCOUNT,
-                                  CONTRACT_SECRET,
-                                  PROJECT_ADDRESS,
+                                  ESCROW_ADDRESS,
+                                  ESCROW_SECRET,
+                                  SELLER_ADDRESS,
                                   amount_str.str().c_str(),
                                   currency,
                                   USD_ISSUER,
@@ -204,29 +232,31 @@ void HandleTransactions(NaClSrpcRpc *rpc,
     }
   }
 
-  /* Campaign failed to meet goal.
-     Return funds to backers. */
-  else {
-    printf("Campaign not funded :(\n");
-    for (std::vector<uint>::iterator iTx=valid_txs.begin(); iTx!=valid_txs.end(); ++iTx) {
-      tx = txs_root[*iTx]["tx"]; 
+  /* Return all non-winning bids and the extra paid by the winner. */
+  for (std::tr1::unordered_map<std::string, double>::iterator iBidder=bidder_totals.begin();
+       iBidder!=bidder_totals.end(); ++iBidder) {
+    amount = iBidder->second;
+    if (iBidder->first==high_bidder_addr) {
+      amount -= second_high_bid;
+    }
+    
+    std::ostringstream amount_str;
+    amount_str << amount;
+    
+    printf("Repay bidder %s $%f\n", iBidder->first.c_str(), amount);
 
-      printf("Repay bidder %s $%s\n", tx["Account"].asCString(),
-                                      tx["Amount"]["value"].asCString());
-
-      if (NACL_SRPC_RESULT_OK !=
-          NaClSrpcInvokeBySignature(&ledger_channel,
-                                    NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX,
-                                    CONTRACT_ACCOUNT,
-                                    CONTRACT_SECRET,
-                                    tx["Account"].asCString(),
-                                    tx["Amount"]["value"].asCString(),
-                                    currency,
-                                    USD_ISSUER,
-                                    dummy_callback)) {
-        fprintf(stderr, "NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX failed\n");
-        rpc->result = NACL_SRPC_RESULT_APP_ERROR;
-      }
+    if (NACL_SRPC_RESULT_OK !=
+        NaClSrpcInvokeBySignature(&ledger_channel,
+                                  NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX,
+                                  ESCROW_ADDRESS,
+                                  ESCROW_SECRET,
+                                  iBidder->first.c_str(),
+                                  amount_str.str().c_str(),
+                                  currency,
+                                  USD_ISSUER,
+                                  dummy_callback)) {
+      fprintf(stderr, "NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX failed\n");
+      rpc->result = NACL_SRPC_RESULT_APP_ERROR;
     }
   }
 

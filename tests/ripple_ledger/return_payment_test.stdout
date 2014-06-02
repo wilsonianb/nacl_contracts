@@ -1,11 +1,10 @@
 rpc call initiated new_ledger:s:
 input 0:  s("{\"fee_base\":10,\"fee_ref\":10,\"ledger_hash\":\"D01692280FA2EC56A065AD12373FC782A030AE0BC9DB3C51058A6C3334E76CCA\",\"ledger_index\":6902147,\"ledger_time\":454697770,\"reserve_base\":20000000,\"reserve_inc\":5000000,\"txn_count\":3,\"type\":\"ledgerClosed\",\"validated_ledgers\":\"32570-6902147\"}")
-Got ripple ledger service descriptor 10
-Got ripple ledger connection 11
 Let's get some account transactions!
 rpc call complete new_ledger:s:
 
-rpc call initiated new_ledger:s:
-input 0:  s("{\"fee_base\":10,\"fee_ref\":10,\"ledger_hash\":\"D01692280FA2EC56A065AD12373FC782A030AE0BC9DB3C51058A6C3334E76CCA\",\"ledger_index\":6902147,\"ledger_time\":454697770,\"reserve_base\":20000000,\"reserve_inc\":5000000,\"txn_count\":3,\"type\":\"ledgerClosed\",\"validated_ledgers\":\"32570-6902147\"}")
-rpc call complete new_transaction:s:
+rpc call initiated new_transactions:s:
+input 0:  s("[{\"meta\":{\"AffectedNodes\":[{\"ModifiedNode\":{\"FinalFields\":{\"Account\":\"rG4dR2LkG9AZRtefoW9hSL8b3XBZgjNowy\",\"Balance\":\"550548999140\",\"Flags\":0,\"OwnerCount\":5,\"Sequence\":73},\"LedgerEntryType\":\"AccountRoot\",\"LedgerIndex\":\"2BAC5B0EEC6695805196ADE670BB38A47F61A9908E07AD16F3CEAB4BC6ECC349\",\"PreviousFields\":{\"Balance\":\"550549999152\",\"Sequence\":72},\"PreviousTxnID\":\"772AA596087D7D9DAD1C5134E7FAF99F640C2FF7CF8B338B6C1582987488E371\",\"PreviousTxnLgrSeq\":6906334}},{\"ModifiedNode\":{\"FinalFields\":{\"Account\":\"rPbFo6KLNSk86hkdDS4NeioJbWxBHvppk\",\"Balance\":\"131999484\",\"Flags\":0,\"OwnerCount\":1,\"Sequence\":36},\"LedgerEntryType\":\"AccountRoot\",\"LedgerIndex\":\"D6C71B3C378202DF75E128329D7E7EE3DBDEF4D5F26C4D5FBEE648A9B969A76D\",\"PreviousFields\":{\"Balance\":\"130999484\"},\"PreviousTxnID\":\"772AA596087D7D9DAD1C5134E7FAF99F640C2FF7CF8B338B6C1582987488E371\",\"PreviousTxnLgrSeq\":6906334}}],\"TransactionIndex\":1,\"TransactionResult\":\"tesSUCCESS\"},\"tx\":{\"Account\":\"rG4dR2LkG9AZRtefoW9hSL8b3XBZgjNowy\",\"Amount\":\"1000000\",\"Destination\":\"DummyContractAddress\",\"Fee\":\"12\",\"Flags\":0,\"Sequence\":72,\"SigningPubKey\":\"02B3B49241A02B46F2FA047C58F81FD77614F41C526BAF97D0CCCB909A1CA22620\",\"TransactionType\":\"Payment\",\"TxnSignature\":\"3045022100B70A065E04D5D6950F3E583375AE9B33381B91F36944F8DD0A6053E24A80FF2502201DB06A5AFCD8762CB03FBD8C87A8A65DEB7F0B27902CD43695B6E564AFB8DB30\",\"date\":454718040,\"hash\":\"2D00FE7B559AAD55880B037CD3DEF0B115B46B80D513A71CF8C690448DBC7649\",\"inLedger\":6906429,\"ledger_index\":6906429},\"validated\":true}]")
+Let's submit a payment transaction!
+rpc call complete new_transactions:s:
 
