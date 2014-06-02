@@ -38,52 +38,6 @@ static void NaClRippleLedgerReleaseChannel_release_mu(
   NaClXMutexUnlock(&self->mu);
 }
 
-static void NaClRippleLedgerServiceReadRpc(
-    struct NaClSrpcRpc      *rpc,
-    struct NaClSrpcArg      **in_args,
-    struct NaClSrpcArg      **out_args,
-    struct NaClSrpcClosure  *done_cls) {
-  struct NaClRippleLedgerServiceConnection  *proxy_conn =
-      (struct NaClRippleLedgerServiceConnection *) rpc->channel->server_instance_data;
-  char                                *ledger_hash = in_args[0]->arrays.str;
-  char                                *dest = out_args[0]->arrays.carr;
-  uint32_t                            nbytes = out_args[0]->u.count;
-  NaClSrpcError                       srpc_error;
-
-  NaClLog(4, "NaClRippleLedgerServiceReadRpc\n");
-
-  NaClRippleLedgerWaitForChannel_yield_mu(proxy_conn);
-
-  NaClLog(4,
-          "NaClRippleLedgerServiceReadRpc: ledger_hash %s\n",
-          ledger_hash);
-  NaClLog(4,
-          "NaClRippleLedgerServiceReadRpc: invoking %s\n",
-          NACL_RIPPLE_LEDGER_READ);
-
-  if (NACL_SRPC_RESULT_OK !=
-      (srpc_error =
-       NaClSrpcInvokeBySignature(&proxy_conn->client_channel,
-                                 NACL_RIPPLE_LEDGER_READ,
-                                 ledger_hash, &nbytes, dest))) {
-    NaClLog(LOG_ERROR,
-            ("Ripple ledger read via channel 0x%"NACL_PRIxPTR" with RPC "
-             NACL_RIPPLE_LEDGER_READ" failed: %d\n"),
-            (uintptr_t) &proxy_conn->client_channel,
-            srpc_error);
-    rpc->result = srpc_error;
-  } else {
-    NaClLog(3,
-            "NaClRippleLedgerServiceReadRpc, proxy returned %"NACL_PRId32
-            " bytes\n",
-            nbytes);
-    out_args[0]->u.count = nbytes;
-    rpc->result = NACL_SRPC_RESULT_OK;
-  }
-  (*done_cls->Run)(done_cls);
-  NaClRippleLedgerReleaseChannel_release_mu(proxy_conn);
-}
-
 static void NaClRippleLedgerServiceGetAccountTxsRpc(
     struct NaClSrpcRpc      *rpc,
     struct NaClSrpcArg      **in_args,
@@ -181,7 +135,6 @@ static void NaClRippleLedgerServiceSubmitPaymentTxRpc(
 }
 
 struct NaClSrpcHandlerDesc const kNaClRippleLedgerServiceHandlers[] = {
-  { NACL_RIPPLE_LEDGER_SERVICE_READ, NaClRippleLedgerServiceReadRpc, },
   { NACL_RIPPLE_LEDGER_SERVICE_GET_ACCOUNT_TXS, NaClRippleLedgerServiceGetAccountTxsRpc, },
   { NACL_RIPPLE_LEDGER_SERVICE_SUBMIT_PAYMENT_TX, NaClRippleLedgerServiceSubmitPaymentTxRpc, },
   { (char const *) NULL, (NaClSrpcMethod) NULL, },

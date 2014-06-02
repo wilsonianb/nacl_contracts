@@ -128,10 +128,6 @@ class ReverseInterface : public RefCountBase {
     UNREFERENCED_PARAMETER(offset);
     return bytes_to_write;
   }
-  
-  // Read ripple ledger.
-  virtual bool ReadRippleLedger(nacl::string ledger_hash,
-                                nacl::string* ledger_data) = 0;
 
   // Request ripple account transactions from specified ledger.
   virtual void GetRippleAccountTxs(nacl::string account,

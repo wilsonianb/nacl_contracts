@@ -70,10 +70,6 @@ class ReverseEmulate : public nacl::ReverseInterface {
                                        int64_t offset,
                                        int64_t length);
 
-  // Read Ripple ledger data.
-  virtual bool ReadRippleLedger(nacl::string ledger_hash,
-                                nacl::string* ledger_data);
-
   // Request Ripple account transactions for specified ledger.
   virtual void GetRippleAccountTxs(nacl::string account,
                                    int          ledger_index_min,
@@ -405,20 +401,6 @@ int64_t ReverseEmulate::RequestQuotaForWrite(nacl::string file_id,
           NACL_PRId64 ", length=%" NACL_PRId64 ")\n", file_id.c_str(), offset,
           length);
   return length;
-}
-
-bool ReverseEmulate::ReadRippleLedger(nacl::string ledger_hash,
-                                      nacl::string* ledger_data) {
-  NaClLog(1, "ReverseEmulate::ReadRippleLedger (ledger_hash=%s)\n", ledger_hash.c_str());
-  if (ledger_hash.empty()) {
-    NaClLog(LOG_ERROR,
-            "ReverseEmulate::ReadRippleLedger:"
-            " missing ledger_hash\n");
-    return false;
-  }
-  
-  *ledger_data = "Hello Ripple Ledger!";
-  return true;
 }
 
 void ReverseEmulate::GetRippleAccountTxs(nacl::string account,
